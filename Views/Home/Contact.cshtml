@@ -1,115 +1,51 @@
-﻿@{
-    ViewBag.Title = "Contact";
+@model ContactMessage
+@{
+    ViewData["Title"] = "Kontakt";
 }
-<h2>@ViewBag.Title.</h2>
-<h3>@ViewBag.Message</h3>
 
-<!DOCTYPE HTML>
-<!--
-    Scalar by Pixelarity
-    pixelarity.com | hello@pixelarity.com
-    License: pixelarity.com/license
--->
-<html>
-<head>
-    <title>Untitled</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-    <link rel="stylesheet" href="assets/css/main.css" />
-</head>
-<body class="is-preload">
+<section class="page-head">
+    <div class="container">
+        <p class="eyebrow">Kundeservice</p>
+        <h1>Kontakt os</h1>
+        <p class="lead">Vores kundeservice er bemandet af Sneglen Svend. Forventet svartid: lang. Det er trods alt det, vi hedder.</p>
+    </div>
+</section>
 
-    <!-- Header -->
-    <header id="header">
-        <div class="container">
-            <h1><a href="index.html" class="icon solid fa-cube">Scalar</a></h1>
-            <nav id="nav">
-                <ul>
-                    <li><a href="index.html">Home</a></li>
-                    <li>
-                        <a href="#">Page Layouts</a>
-                        <ul>
-                            <li><a href="left-sidebar.html">Left Sidebar</a></li>
-                            <li><a href="right-sidebar.html">Right Sidebar</a></li>
-                            <li><a href="no-sidebar.html">No Sidebar</a></li>
-                            <li><a href="contact.html">Contact</a></li>
-                            <li>
-                                <a href="#">Submenu</a>
-                                <ul>
-                                    <li><a href="#">Option One</a></li>
-                                    <li><a href="#">Option Two</a></li>
-                                    <li><a href="#">Option Three</a></li>
-                                    <li><a href="#">Option Four</a></li>
-                                </ul>
-                            </li>
-                        </ul>
-                    </li>
-                    <li><a href="elements.html">Elements</a></li>
-                </ul>
-            </nav>
-        </div>
-    </header>
+<section class="container section layout-sidebar">
+    <form class="panel form" asp-action="Contact" method="post">
+        <div asp-validation-summary="ModelOnly" class="form__errors"></div>
 
-    <!-- Page Wrapper -->
-    <div id="page-wrapper">
-
-
-        <!-- Main-->
-        <div id="main" class="wrapper style3">
-            <div class="container medium">
-                <header class="major">
-                    <h2>Contact</h2>
-                    <p>Nisl faucibus sed accumsan col pretium</p>
-                </header>
-
-                <!-- Content -->
-                <section id="content">
-                    <form method="post" action="#">
-                        <div class="row gtr-uniform">
-                            <div class="col-6 col-12-xsmall">
-                                <input type="text" name="name" id="name" value="" placeholder="Name" />
-                            </div>
-                            <div class="col-6 col-12-xsmall">
-                                <input type="email" name="email" id="email" value="" placeholder="Email" />
-                            </div>
-                            <div class="col-12">
-                                <input type="text" name="subject" id="subject" value="" placeholder="Subject" />
-                            </div>
-                            <div class="col-12">
-                                <textarea name="message" id="message" placeholder="Enter your message" rows="6"></textarea>
-                            </div>
-                            <div class="col-12">
-                                <ul class="actions special">
-                                    <li><input type="submit" value="Send Message" class="primary" /></li>
-                                    <li><input type="reset" value="Reset Form" /></li>
-                                </ul>
-                            </div>
-                        </div>
-                    </form>
-                </section>
-
+        <div class="form__row form__row--2">
+            <div class="field">
+                <label asp-for="Name"></label>
+                <input asp-for="Name" placeholder="Fx Pralende Poul" />
+                <span asp-validation-for="Name" class="field__error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="Email"></label>
+                <input asp-for="Email" placeholder="dig@eksempel.dk" />
+                <span asp-validation-for="Email" class="field__error"></span>
             </div>
         </div>
 
-        <!-- Footer -->
-        <footer id="footer">
-            <ul class="major-icons">
-                <li><a href="#" class="icon brands fa-facebook-f"><span class="label">Facebook</span></a></li>
-                <li><a href="#" class="icon brands fa-twitter"><span class="label">Twitter</span></a></li>
-                <li><a href="#" class="icon solid fa-envelope"><span class="label">Email</span></a></li>
-            </ul>
-            <p class="copyright">&copy; Untitled. All rights reserved.</p>
-        </footer>
+        <div class="field">
+            <label asp-for="Message"></label>
+            <textarea asp-for="Message" rows="6" placeholder="Klager over odds, ros til sneglen, forslag til nye bets…"></textarea>
+            <span asp-validation-for="Message" class="field__error"></span>
+        </div>
 
-    </div>
+        <button type="submit" class="btn btn--accent btn--lg">Send besked</button>
+    </form>
 
-    <!-- Scripts -->
-    <script src="assets/js/jquery.min.js"></script>
-    <script src="assets/js/jquery.dropotron.min.js"></script>
-    <script src="assets/js/browser.min.js"></script>
-    <script src="assets/js/breakpoints.min.js"></script>
-    <script src="assets/js/util.js"></script>
-    <script src="assets/js/main.js"></script>
-
-</body>
-</html>
+    <aside class="panel">
+        <h3 class="panel__title">Ofte stillede spørgsmål</h3>
+        <dl class="faq">
+            <dt>Hvornår får jeg min gevinst?</dt>
+            <dd>Når fremtiden er indtruffet, og vi har fundet ud af, hvem der havde ret. Og du har ikke vundet noget, der har værdi.</dd>
+            <dt>Kan jeg hæve mine Pralkroner?</dt>
+            <dd>Du kan hæve dem til skyerne i en samtale. Andet kan du ikke.</dd>
+            <dt>Er det her et rigtigt spillested?</dt>
+            <dd>Nej. Der er ingen rigtige penge involveret. Overhovedet. Det her er satire med en database.</dd>
+        </dl>
+    </aside>
+</section>

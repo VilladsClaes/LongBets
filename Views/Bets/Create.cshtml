@@ -1,0 +1,61 @@
+@model Bet
+@{
+    ViewData["Title"] = "Opret bet";
+}
+
+<section class="page-head">
+    <div class="container">
+        <a class="link-back" asp-action="Index">← Alle bets</a>
+        <p class="eyebrow">Nyt marked</p>
+        <h1>Opret et bet</h1>
+        <p class="lead">Kom med en påstand om fremtiden. Den skal kunne afgøres med et klart ja eller nej, og tidligst om et år.</p>
+    </div>
+</section>
+
+<section class="container section layout-sidebar">
+    <form class="panel form" asp-action="Create" method="post">
+        <div asp-validation-summary="ModelOnly" class="form__errors"></div>
+
+        <div class="field">
+            <label asp-for="Title"></label>
+            <input asp-for="Title" placeholder="Fx »Rundkørsler bliver forstået af alle bilister inden 2040«" />
+            <span asp-validation-for="Title" class="field__error"></span>
+        </div>
+
+        <div class="field">
+            <label asp-for="Description"></label>
+            <textarea asp-for="Description" rows="4" placeholder="Hvordan afgøres det? Hvad tæller, og hvad tæller ikke?"></textarea>
+            <span asp-validation-for="Description" class="field__error"></span>
+        </div>
+
+        <div class="form__row form__row--2">
+            <div class="field">
+                <label asp-for="Category"></label>
+                <select asp-for="Category" asp-items="Html.GetEnumSelectList<BetCategory>()"></select>
+            </div>
+            <div class="field">
+                <label asp-for="ResolvesOn"></label>
+                <input asp-for="ResolvesOn" type="date" />
+                <span asp-validation-for="ResolvesOn" class="field__error"></span>
+            </div>
+        </div>
+
+        <div class="field">
+            <label asp-for="CreatedBy"></label>
+            <input asp-for="CreatedBy" placeholder="Fx Profetiske Pia" autocomplete="nickname" />
+            <span asp-validation-for="CreatedBy" class="field__error"></span>
+        </div>
+
+        <button type="submit" class="btn btn--accent btn--lg">Sæt bettet i gang</button>
+    </form>
+
+    <aside class="panel">
+        <h3 class="panel__title">📜 Regler for gode bets</h3>
+        <ul class="rules">
+            <li><strong>Mindst et år ude.</strong> Vi hedder ikke ShortBets.</li>
+            <li><strong>Klart ja eller nej.</strong> »Det bliver lidt bedre« er ikke et bet. Det er en politisk tale.</li>
+            <li><strong>Ingen rigtige personer.</strong> Bet ikke på naboens skilsmisse. Det er ikke satire, det er bare ondt.</li>
+            <li><strong>Hold det sjovt.</strong> Sneglen Svend modererer. Langsomt, men grundigt.</li>
+        </ul>
+    </aside>
+</section>

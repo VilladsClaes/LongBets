@@ -259,3 +259,7 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
+# SQLite-database (oprettes automatisk ved opstart)
+App_Data/
+publish/
+appsettings.Production.json
