@@ -47,8 +47,10 @@ jobs:
       - name: Skriv admin-adgangskode
         env:
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
-        if: env.ADMIN_PASSWORD != ''
-        run: jq -n --arg pw "$ADMIN_PASSWORD" '{Admin: {Password: $pw}}' > out/appsettings.Production.json
+        run: |
+          if [ -n "$ADMIN_PASSWORD" ]; then
+            jq -n --arg pw "$ADMIN_PASSWORD" '{Admin: {Password: $pw}}' > out/appsettings.Production.json
+          fi
 
       - name: Installer lftp
         run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
