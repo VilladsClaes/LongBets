@@ -91,6 +91,35 @@
         </div>
     }
 
+    <h2 id="nyheder" class="section-title">Nyhedsfeeds <span class="muted">(@Model.NewsCount nyheder i databasen)</span></h2>
+    <div class="admin-table">
+        @foreach (var source in LongBets.News.NewsSources.All)
+        {
+            var state = Model.Feeds.FirstOrDefault(f => f.Source == source.Id);
+            <div class="admin-row">
+                <div class="admin-row__main">
+                    <partial name="_NewsSourceTag" model="source.Id" />
+                    @if (state is null)
+                    {
+                        <span class="muted small">Ikke hentet endnu</span>
+                    }
+                    else if (state.Ok)
+                    {
+                        <span class="small"><span class="yes">OK</span> · @state.Count i feedet · @state.LastFetch.TimeAgo()</span>
+                    }
+                    else
+                    {
+                        <span class="small"><span class="no">Fejl</span> · @state.LastFetch.TimeAgo() · @state.Error</span>
+                    }
+                    <div class="muted small feed-url">@string.Join(" · ", source.Urls)</div>
+                </div>
+            </div>
+        }
+    </div>
+    <form asp-action="RefreshNews" method="post" class="admin-refresh">
+        <button type="submit" class="btn btn--sm btn--ghost">↻ Hent nyheder nu</button>
+    </form>
+
     <h2 id="beskeder" class="section-title">Kontaktbeskeder</h2>
     @if (Model.Messages.Count == 0)
     {

@@ -16,6 +16,14 @@
             }
         </div>
         <h1 class="detail-title">@bet.Title</h1>
+        @if (bet.NewsUrl is not null)
+        {
+            <div class="news-ref">
+                <span class="muted small">Baseret på nyheden</span>
+                <partial name="_NewsSourceTag" model="bet.NewsSource" />
+                <a href="@bet.NewsUrl" target="_blank" rel="noopener nofollow">@bet.NewsTitle ↗</a>
+            </div>
+        }
         @if (!string.IsNullOrWhiteSpace(bet.Description))
         {
             <p class="lead">@bet.Description</p>

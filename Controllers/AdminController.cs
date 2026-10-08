@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using LongBets.Data;
 using LongBets.Models;
+using LongBets.News;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -13,7 +14,7 @@ using Microsoft.EntityFrameworkCore;
 namespace LongBets.Controllers;
 
 [Authorize]
-public class AdminController(AppDbContext db, IConfiguration config) : Controller
+public class AdminController(AppDbContext db, IConfiguration config, NewsRefreshService refresher) : Controller
 {
     public async Task<IActionResult> Index()
     {
@@ -25,6 +26,8 @@ public class AdminController(AppDbContext db, IConfiguration config) : Controlle
             Open = bets.Where(b => b.Outcome == BetOutcome.Open).OrderBy(b => b.ResolvesOn).Select(BetCard.From).ToList(),
             Resolved = bets.Where(b => b.Outcome != BetOutcome.Open).OrderByDescending(b => b.ResolvedAt).Select(BetCard.From).ToList(),
             Messages = messages,
+            Feeds = await db.FeedStates.AsNoTracking().ToListAsync(),
+            NewsCount = await db.NewsItems.CountAsync(),
         });
     }
 
@@ -46,6 +49,15 @@ public class AdminController(AppDbContext db, IConfiguration config) : Controlle
             _ => $"»{bet.Title}« er genåbnet.",
         };
         return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult RefreshNews()
+    {
+        refresher.Wake();
+        TempData["Toast"] = "Nyhederne hentes nu. Genindlæs siden om lidt.";
+        return RedirectToAction(nameof(Index), null, "nyheder");
     }
 
     [HttpPost]

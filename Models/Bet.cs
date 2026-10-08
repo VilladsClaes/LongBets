@@ -49,5 +49,15 @@ public class Bet
 
     public DateTime? ResolvedAt { get; set; }
 
+    // Hvis bettet er lavet ud fra en nyhed. Kopieres ind, fordi nyhederne selv slettes efter en uge.
+    [StringLength(1000)]
+    public string? NewsUrl { get; set; }
+
+    [StringLength(300)]
+    public string? NewsTitle { get; set; }
+
+    [StringLength(30)]
+    public string? NewsSource { get; set; }
+
     public List<Stake> Stakes { get; set; } = [];
 }

@@ -24,6 +24,16 @@ public static class Display
         return years < 1 ? $"{days / 30} måneder tilbage" : $"{years:0.#} år tilbage";
     }
 
+    public static string TimeAgo(this DateTime utc)
+    {
+        var ago = DateTime.UtcNow - utc;
+        if (ago < TimeSpan.FromMinutes(1)) return "lige nu";
+        if (ago < TimeSpan.FromHours(1)) return $"for {(int)ago.TotalMinutes} min. siden";
+        if (ago < TimeSpan.FromHours(24)) return $"for {(int)ago.TotalHours} t. siden";
+        var days = (int)ago.TotalDays;
+        return days == 1 ? "i går" : $"for {days} dage siden";
+    }
+
     /// <summary>Satirisk mærkat til kortene, alt efter hvor vildt odds ser ud.</summary>
     public static string? Badge(this BetCard card) => card switch
     {

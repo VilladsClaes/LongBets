@@ -1,0 +1,5 @@
+@model string?
+@{
+    var source = LongBets.News.NewsSources.Find(Model);
+}
+<span class="source-tag" style="--source:@(source?.Color ?? "#8d98b8")">@(source?.Name ?? Model)</span>

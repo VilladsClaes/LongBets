@@ -3,6 +3,7 @@ using System.Text.Encodings.Web;
 using System.Text.Unicode;
 using System.Threading.RateLimiting;
 using LongBets.Data;
+using LongBets.News;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.WebEncoders;
@@ -20,6 +21,18 @@ Directory.CreateDirectory(Path.Combine(builder.Environment.ContentRootPath, "App
 
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
 builder.Services.AddControllersWithViews();
+
+// Nyhedsimport fra danske medier, se News/NewsSources.cs.
+builder.Services.AddHttpClient(NewsImporter.HttpClientName, http =>
+{
+    http.Timeout = TimeSpan.FromSeconds(15);
+    http.MaxResponseContentBufferSize = 10 * 1024 * 1024;
+    http.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; LongBets/1.0; +https://longbets.villadsclaes.dk)");
+    http.DefaultRequestHeaders.Accept.ParseAdd("application/rss+xml, application/xml;q=0.9, text/xml;q=0.8, */*;q=0.5");
+});
+builder.Services.AddScoped<NewsImporter>();
+builder.Services.AddSingleton<NewsRefreshService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<NewsRefreshService>());
 
 // Admin-login: én adgangskode fra konfigurationen (Admin:Password), gemt i en cookie.
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

@@ -13,6 +13,10 @@
 </section>
 
 <section class="container section">
+    @if (Model.NewsUrl is not null)
+    {
+        <p class="news-ref">Viser kun bets på én nyhed. <a asp-action="Index">Vis alle bets</a></p>
+    }
     <div class="filters">
         <nav class="filters__group" aria-label="Kategori">
             <a class="pill @(Model.Category is null ? "is-active" : "")" asp-action="Index" asp-route-sort="@Model.Sort">Alle</a>

@@ -22,12 +22,12 @@
 <section class="hero">
     <div class="container hero__grid">
         <div>
-            <p class="eyebrow">Fremtidens bookmaker · Afgøres tidligst om 1 år</p>
+            <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span> Live-odds på dagens nyheder · Afgøres tidligst om 1 år</p>
             <h1 class="hero__title">Sæt dine <span class="accent">Pralkroner</span> på fremtiden</h1>
-            <p class="hero__lead">Kommer toget til tiden? Lander vi på Mars før kontorprinteren virker? Her kan du endelig bevise, at du havde ret, cirka 15 år efter, at alle har glemt diskussionen.</p>
+            <p class="hero__lead">Vi henter nyhederne fra DR, Politiken, Berlingske og resten hvert tiende minut. Du sætter odds på, hvordan de ser ud om et år. Så kan du endelig bevise, at du havde ret, længe efter at alle har glemt diskussionen.</p>
             <div class="hero__actions">
-                <a class="btn btn--accent btn--lg" asp-controller="Bets" asp-action="Index">Se alle odds</a>
-                <a class="btn btn--ghost btn--lg" asp-controller="Bets" asp-action="Create">Opret dit eget bet</a>
+                <a class="btn btn--accent btn--lg" asp-controller="News" asp-action="Index">Bet på dagens nyheder</a>
+                <a class="btn btn--ghost btn--lg" asp-controller="Bets" asp-action="Index">Se alle odds</a>
             </div>
         </div>
 
@@ -49,6 +49,26 @@
         <div class="stat"><span class="stat__value">@Model.TotalPlayers</span><span class="stat__label">selvsikre spillere</span></div>
         <div class="stat"><span class="stat__value">0</span><span class="stat__label">udbetalinger til dato</span></div>
     </div>
+</section>
+
+<section class="container section">
+    <div class="section__head">
+        <h2><span class="live-dot" aria-hidden="true"></span> Breaking: sæt odds på dagens nyheder</h2>
+        <a class="link-arrow" asp-controller="News" asp-action="Index">Alle nyheder →</a>
+    </div>
+    @if (Model.News.Count == 0)
+    {
+        <div class="empty">Nyhederne er på vej. Sneglen henter dem lige nu, så prøv at genindlæse om et øjeblik.</div>
+    }
+    else
+    {
+        <div class="news-grid">
+            @foreach (var n in Model.News)
+            {
+                <partial name="_NewsItem" model="(n, 0)" />
+            }
+        </div>
+    }
 </section>
 
 <section class="container section">

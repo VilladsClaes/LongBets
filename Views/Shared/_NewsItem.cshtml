@@ -1,0 +1,20 @@
+@model (NewsItem Item, int Bets)
+@{
+    var n = Model.Item;
+}
+<article class="news-item">
+    <div class="news-item__meta">
+        <partial name="_NewsSourceTag" model="n.Source" />
+        <time datetime="@n.SortTime.ToString("o")">@n.SortTime.TimeAgo()</time>
+        @if (Model.Bets > 0)
+        {
+            <a class="news-item__bets" asp-controller="Bets" asp-action="Index" asp-route-news="@n.Url">🎲 @Model.Bets @(Model.Bets == 1 ? "bet" : "bets")</a>
+        }
+    </div>
+    <h3 class="news-item__title"><a href="@n.Url" target="_blank" rel="noopener nofollow">@n.Title</a></h3>
+    @if (!string.IsNullOrEmpty(n.Summary))
+    {
+        <p class="news-item__summary">@n.Summary</p>
+    }
+    <a class="btn btn--sm btn--accent news-item__cta" asp-controller="Bets" asp-action="Create" asp-route-newsId="@n.Id">Bet på den →</a>
+</article>

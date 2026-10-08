@@ -28,3 +28,13 @@ document.querySelectorAll("form[data-confirm]").forEach(function (form) {
         if (!window.confirm(form.dataset.confirm)) e.preventDefault();
     });
 });
+
+// Opret bet ud fra en nyhed: skabelonknapperne fylder påstanden ud.
+document.querySelectorAll("[data-template]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+        var title = document.querySelector('input[name="Title"]');
+        if (!title) return;
+        title.value = btn.dataset.template;
+        title.focus();
+    });
+});

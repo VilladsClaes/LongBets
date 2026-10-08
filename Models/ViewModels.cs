@@ -18,6 +18,7 @@ public class HomeViewModel
 {
     public required List<BetCard> Featured { get; init; }
     public required List<TickerItem> Ticker { get; init; }
+    public required List<NewsItem> News { get; init; }
     public required List<Braggart> Braggarts { get; init; }
     public int TotalBets { get; init; }
     public int TotalPool { get; init; }
@@ -29,6 +30,7 @@ public class BetListViewModel
     public required List<BetCard> Bets { get; init; }
     public BetCategory? Category { get; init; }
     public string Sort { get; init; } = "hot";
+    public string? NewsUrl { get; init; }
 }
 
 public class AdminViewModel
@@ -36,8 +38,17 @@ public class AdminViewModel
     public required List<BetCard> Open { get; init; }
     public required List<BetCard> Resolved { get; init; }
     public required List<ContactMessage> Messages { get; init; }
+    public required List<FeedState> Feeds { get; init; }
+    public int NewsCount { get; init; }
 }
 
+public class NewsListViewModel
+{
+    public required List<NewsItem> Items { get; init; }
+    public string? Source { get; init; }
+    public required Dictionary<string, int> BetCounts { get; init; }
+    public DateTime? LastUpdate { get; init; }
+}
 public class BetDetailsViewModel
 {
     public required BetCard Card { get; init; }

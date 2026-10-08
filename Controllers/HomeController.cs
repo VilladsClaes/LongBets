@@ -1,14 +1,17 @@
 using LongBets.Data;
 using LongBets.Models;
+using LongBets.News;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace LongBets.Controllers;
 
-public class HomeController(AppDbContext db) : Controller
+public class HomeController(AppDbContext db, NewsRefreshService refresher) : Controller
 {
     public async Task<IActionResult> Index()
     {
+        refresher.RequestRefreshIfStale();
+
         var bets = await db.Bets.AsNoTracking()
             .Where(b => b.Outcome == BetOutcome.Open)
             .Include(b => b.Stakes)
@@ -32,6 +35,8 @@ public class HomeController(AppDbContext db) : Controller
         {
             Featured = bets.Select(BetCard.From).OrderByDescending(c => c.TotalPool).Take(6).ToList(),
             Ticker = ticker,
+            News = (await db.NewsItems.AsNoTracking().OrderByDescending(n => n.PublishedAt ?? n.FetchedAt).Take(20).ToListAsync())
+                .DistinctStories().Take(6).ToList(),
             Braggarts = braggarts,
             TotalBets = bets.Count,
             TotalPool = bets.Sum(b => b.Stakes.Sum(s => s.Amount)),

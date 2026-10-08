@@ -7,10 +7,11 @@ namespace LongBets.Controllers;
 
 public class BetsController(AppDbContext db) : Controller
 {
-    public async Task<IActionResult> Index(BetCategory? category, string sort = "hot")
+    public async Task<IActionResult> Index(BetCategory? category, string? news, string sort = "hot")
     {
         var query = db.Bets.AsNoTracking().Include(b => b.Stakes).AsQueryable();
         if (category is not null) query = query.Where(b => b.Category == category);
+        if (!string.IsNullOrEmpty(news)) query = query.Where(b => b.NewsUrl == news);
 
         var cards = (await query.ToListAsync()).Select(BetCard.From);
         cards = sort switch
@@ -21,7 +22,7 @@ public class BetsController(AppDbContext db) : Controller
             _ => cards.OrderByDescending(c => c.TotalPool),
         };
 
-        return View(new BetListViewModel { Bets = cards.ToList(), Category = category, Sort = sort });
+        return View(new BetListViewModel { Bets = cards.ToList(), Category = category, Sort = sort, NewsUrl = string.IsNullOrEmpty(news) ? null : news });
     }
 
     public async Task<IActionResult> Details(int id)
@@ -60,19 +61,41 @@ public class BetsController(AppDbContext db) : Controller
     }
 
     [HttpGet]
-    public IActionResult Create() => View(new Bet { ResolvesOn = DateOnly.FromDateTime(DateTime.Today.AddYears(10)) });
+    public async Task<IActionResult> Create(int? newsId)
+    {
+        var news = newsId is null ? null : await db.NewsItems.AsNoTracking().FirstOrDefaultAsync(n => n.Id == newsId);
+        ViewBag.News = news;
+        return View(new Bet
+        {
+            ResolvesOn = DateOnly.FromDateTime(DateTime.Today.AddYears(news is null ? 10 : 1)),
+            Category = BetCategory.Samfund,
+        });
+    }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create([Bind(nameof(Bet.Title), nameof(Bet.Description), nameof(Bet.Category), nameof(Bet.ResolvesOn), nameof(Bet.CreatedBy))] Bet bet)
+    public async Task<IActionResult> Create(int? newsId, [Bind(nameof(Bet.Title), nameof(Bet.Description), nameof(Bet.Category), nameof(Bet.ResolvesOn), nameof(Bet.CreatedBy))] Bet bet)
     {
+        // Nyheden slås op i databasen i stedet for at stole på et link fra formularen.
+        var news = newsId is null ? null : await db.NewsItems.AsNoTracking().FirstOrDefaultAsync(n => n.Id == newsId);
+
         if (bet.ResolvesOn < DateOnly.FromDateTime(DateTime.Today.AddYears(1)))
             ModelState.AddModelError(nameof(Bet.ResolvesOn), "Det her er LongBets. Mindst ét år ude i fremtiden, tak. Kortsigtet tænkning hører hjemme på børsen.");
 
-        if (!ModelState.IsValid) return View(bet);
+        if (!ModelState.IsValid)
+        {
+            ViewBag.News = news;
+            return View(bet);
+        }
 
         bet.CreatedAt = DateTime.UtcNow;
         bet.Outcome = BetOutcome.Open;
+        if (news is not null)
+        {
+            bet.NewsUrl = news.Url;
+            bet.NewsTitle = news.Title;
+            bet.NewsSource = news.Source;
+        }
         db.Bets.Add(bet);
         await db.SaveChangesAsync();
 
