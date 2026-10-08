@@ -1,0 +1,81 @@
+name: Udgiv til simply.com
+
+# Bygger LongBets og uploader til longbets.villadsclaes.dk via FTP.
+#
+# Kræver disse repository secrets (Settings → Secrets and variables → Actions):
+#   FTP_SERVER      FTP-server fra simply.com's kontrolpanel (Administration → Login-oplysninger)
+#   FTP_USERNAME    FTP-brugernavn
+#   FTP_PASSWORD    FTP-adgangskode
+#   FTP_REMOTE_DIR  Mappen for subdomænet på webhotellet, fx /longbets.villadsclaes.dk/
+#   ADMIN_PASSWORD  (valgfri) Admin-adgangskoden. Sættes den, skrives appsettings.Production.json ved hver udgivelse.
+
+on:
+  push:
+    branches: [aspnetcore-migration]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-simply
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Tjek secrets
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_REMOTE_DIR: ${{ secrets.FTP_REMOTE_DIR }}
+        run: |
+          for s in FTP_SERVER FTP_USERNAME FTP_PASSWORD FTP_REMOTE_DIR; do
+            if [ -z "${!s}" ]; then echo "::error::Secret $s mangler"; missing=1; fi
+          done
+          exit ${missing:-0}
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # Self-contained win-x86, som simply.com anbefaler: serveren behøver ikke have .NET 10 installeret.
+      - name: Byg og publicer
+        run: dotnet publish LongBets.csproj -c Release -r win-x86 --self-contained true -o out
+
+      - name: Skriv admin-adgangskode
+        env:
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        if: env.ADMIN_PASSWORD != ''
+        run: jq -n --arg pw "$ADMIN_PASSWORD" '{Admin: {Password: $pw}}' > out/appsettings.Production.json
+
+      - name: Installer lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      # app_offline.htm stopper appen, så IIS slipper låsen på DLL'erne under upload.
+      # App_Data (SQLite-databasen) uploades og slettes aldrig.
+      - name: Upload via FTP
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_REMOTE_DIR: ${{ secrets.FTP_REMOTE_DIR }}
+        run: |
+          echo '<!doctype html><meta charset="utf-8"><title>LongBets</title><p>LongBets opdateres. Prøv igen om et øjeblik.</p>' > app_offline.htm
+          EXCLUDE="--exclude-glob App_Data/ --exclude-glob app_offline.htm"
+          if [ ! -f out/appsettings.Production.json ]; then EXCLUDE="$EXCLUDE --exclude-glob appsettings.Production.json"; fi
+          rm -rf out/App_Data
+          cat > lftp.script <<EOF
+          set ssl:verify-certificate no
+          set net:max-retries 3
+          set net:timeout 30
+          open --user "$FTP_USERNAME" --password "$FTP_PASSWORD" "$FTP_SERVER"
+          cd "$FTP_REMOTE_DIR"
+          put app_offline.htm
+          EOF
+          echo 'sleep 5' >> lftp.script
+          echo "mirror -R --transfer-all --no-perms --parallel=4 $EXCLUDE out/ ./" >> lftp.script
+          echo 'rm app_offline.htm' >> lftp.script
+          lftp -f lftp.script
+          rm lftp.script
