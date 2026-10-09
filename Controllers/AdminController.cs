@@ -33,19 +33,21 @@ public class AdminController(AppDbContext db, IConfiguration config, NewsRefresh
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Resolve(int id, BetOutcome outcome)
+    public async Task<IActionResult> Resolve(int id, BetOutcome outcome, string? note)
     {
         var bet = await db.Bets.FindAsync(id);
         if (bet is null) return NotFound();
 
         bet.Outcome = outcome;
         bet.ResolvedAt = outcome == BetOutcome.Open ? null : DateTime.UtcNow;
+        bet.ResolutionNote = outcome != BetOutcome.Open && note?.Trim() is { Length: > 0 } text ? text[..Math.Min(text.Length, 1000)] : null;
         await db.SaveChangesAsync();
 
         TempData["Toast"] = outcome switch
         {
             BetOutcome.Yes => $"Afgjort: PÅ vandt »{bet.Title}«.",
             BetOutcome.No => $"Afgjort: IMOD vandt »{bet.Title}«.",
+            BetOutcome.Void => $"»{bet.Title}« er annulleret. Alle får indsatsen retur.",
             _ => $"»{bet.Title}« er genåbnet.",
         };
         return RedirectToAction(nameof(Index));

@@ -79,12 +79,24 @@
 
     <aside id="stake" class="panel betslip">
         <h3 class="panel__title">🎟️ Kupon</h3>
-        @if (bet.Outcome != BetOutcome.Open)
+        @if (bet.Outcome == BetOutcome.Void)
+        {
+            <p>Det her bet er <strong>annulleret</strong>. Ingen vandt, ingen tabte, og alle har fået deres Pralkroner retur. Sneglen er skuffet.</p>
+            @if (bet.ResolutionNote is not null)
+            {
+                <p class="resolution-note"><strong>Begrundelse:</strong> @bet.ResolutionNote</p>
+            }
+        }
+        else if (bet.Outcome != BetOutcome.Open)
         {
             var yesWon = bet.Outcome == BetOutcome.Yes;
             var winOdds = yesWon ? card.YesOdds : card.NoOdds;
             var winners = bet.Stakes.Where(s => s.OnYes == yesWon).OrderByDescending(s => s.Amount).ToList();
-            <p>Det her bet er afgjort: <strong class="@(yesWon ? "yes" : "no")">@(yesWon ? "PÅ" : "IMOD")</strong> vandt. Tillykke til de forudseende og kondolencer til resten.</p>
+            <p>Det her bet er afgjort: <strong class="@bet.Outcome.CssClass()">@(yesWon ? "PÅ" : "IMOD")</strong> vandt. Tillykke til de forudseende og kondolencer til resten.</p>
+            @if (bet.ResolutionNote is not null)
+            {
+                <p class="resolution-note"><strong>Begrundelse:</strong> @bet.ResolutionNote</p>
+            }
             @if (winners.Count > 0)
             {
                 <h4>Udbetalinger (i Pralkroner, naturligvis)</h4>
@@ -92,7 +104,13 @@
                     @foreach (var w in winners)
                     {
                         <li>
-                            <span class="leaderboard__name">@w.PlayerName</span>
+                            <span class="leaderboard__name">
+                                @w.PlayerName
+                                @if (w.WinNote is not null)
+                                {
+                                    <q class="win-note">@w.WinNote</q>
+                                }
+                            </span>
                             <span class="leaderboard__value">@((w.Amount * winOdds).ToString("N0")) PK</span>
                         </li>
                     }
@@ -101,6 +119,17 @@
             else
             {
                 <p class="muted">Ingen satsede på den rigtige side. Huset vinder, og huset er en snegl.</p>
+            }
+
+            @if (Model.OwnWinningStake is { } mine)
+            {
+                <form class="form" asp-action="WinNote" asp-route-id="@bet.Id" method="post">
+                    <div class="field">
+                        <label for="note">Du fik ret, @mine.PlayerName. Jeg fik ret fordi …</label>
+                        <textarea id="note" name="note" rows="3" maxlength="600" required placeholder="Fx »Jeg læste faktisk artiklen«">@mine.WinNote</textarea>
+                    </div>
+                    <button type="submit" class="btn btn--accent btn--block">@(mine.WinNote is null ? "Prål offentligt" : "Ret min forklaring")</button>
+                </form>
             }
         }
         else

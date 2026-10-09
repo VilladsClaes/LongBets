@@ -53,4 +53,7 @@ public class BetDetailsViewModel
 {
     public required BetCard Card { get; init; }
     public required Stake NewStake { get; init; }
+
+    /// <summary>Den besøgendes egen vindende indsats, så de kan skrive »Jeg fik ret fordi …«.</summary>
+    public Stake? OwnWinningStake { get; init; }
 }

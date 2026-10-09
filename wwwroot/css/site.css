@@ -493,6 +493,26 @@ p { margin: 0 0 1em; }
 .btn--no { background: rgba(255, 85, 119, .15); color: var(--no); border-color: rgba(255, 85, 119, .5); }
 .footer-admin { color: var(--muted); }
 .winners { margin-top: 12px; }
+.resolve-form { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.resolve-form input {
+    flex: 1 1 180px;
+    min-width: 0;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--line);
+    background: var(--bg-2);
+    color: var(--text);
+    font: inherit;
+    font-size: .8rem;
+}
+.resolution-note { margin: 8px 0 0; padding: 10px 12px; border-left: 3px solid var(--line); background: var(--bg-2); border-radius: var(--radius-sm); }
+.winners .leaderboard__name { white-space: normal; }
+.win-note { display: block; quotes: none; font-weight: 400; margin-top: 4px; font-size: .85rem; color: #c3cbe2; }
+.win-note::before { content: "Jeg fik ret fordi "; color: var(--muted); }
+.link-preview { display: flex; gap: 10px; align-items: center; font-size: .85rem; }
+.link-preview img { width: 64px; height: 64px; object-fit: cover; border-radius: var(--radius-sm); flex: 0 0 auto; }
+.field__row { display: flex; gap: 8px; }
+.field__row input { flex: 1 1 auto; min-width: 0; }
 @media (max-width: 760px) {
     .admin-row { flex-direction: column; }
     .stats--compact { grid-template-columns: repeat(3, 1fr); }

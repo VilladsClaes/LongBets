@@ -16,6 +16,9 @@ public enum BetOutcome
     Open,
     Yes,
     No,
+
+    /// <summary>Annulleret: ingen vinder, alle indsatser går retur.</summary>
+    Void,
 }
 
 public class Bet
@@ -49,13 +52,18 @@ public class Bet
 
     public DateTime? ResolvedAt { get; set; }
 
-    // Hvis bettet er lavet ud fra en nyhed. Kopieres ind, fordi nyhederne selv slettes efter en uge.
+    /// <summary>Admins begrundelse for afgørelsen, vises på bettet.</summary>
+    [StringLength(1000)]
+    public string? ResolutionNote { get; set; }
+
+    // Hvis bettet er lavet ud fra en nyhed eller et indsat link. Kopieres ind, fordi nyhederne selv slettes efter en uge.
     [StringLength(1000)]
     public string? NewsUrl { get; set; }
 
     [StringLength(300)]
     public string? NewsTitle { get; set; }
 
+    /// <summary>Id fra NewsSources, eller værtsnavnet for et indsat link (fx "zetland.dk").</summary>
     [StringLength(30)]
     public string? NewsSource { get; set; }
 

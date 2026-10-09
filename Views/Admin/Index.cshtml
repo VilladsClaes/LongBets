@@ -42,13 +42,11 @@
                         </div>
                     </div>
                     <div class="admin-row__actions">
-                        <form asp-action="Resolve" asp-route-id="@c.Bet.Id" method="post" data-confirm="Afgør »@c.Bet.Title« som PÅ?">
-                            <input type="hidden" name="outcome" value="@BetOutcome.Yes" />
-                            <button type="submit" class="btn btn--sm btn--yes">PÅ vandt</button>
-                        </form>
-                        <form asp-action="Resolve" asp-route-id="@c.Bet.Id" method="post" data-confirm="Afgør »@c.Bet.Title« som IMOD?">
-                            <input type="hidden" name="outcome" value="@BetOutcome.No" />
-                            <button type="submit" class="btn btn--sm btn--no">IMOD vandt</button>
+                        <form class="resolve-form" asp-action="Resolve" asp-route-id="@c.Bet.Id" method="post" data-confirm="Afgør »@c.Bet.Title«? Afgørelsen vises på bettet.">
+                            <input type="text" name="note" maxlength="1000" placeholder="Begrundelse (valgfri)" aria-label="Begrundelse for afgørelsen" />
+                            <button type="submit" name="outcome" value="@BetOutcome.Yes" class="btn btn--sm btn--yes">PÅ vandt</button>
+                            <button type="submit" name="outcome" value="@BetOutcome.No" class="btn btn--sm btn--no">IMOD vandt</button>
+                            <button type="submit" name="outcome" value="@BetOutcome.Void" class="btn btn--sm btn--ghost">Annullér</button>
                         </form>
                         <form asp-action="DeleteBet" asp-route-id="@c.Bet.Id" method="post" data-confirm="Slet »@c.Bet.Title« og alle @c.StakeCount indsatser permanent?">
                             <button type="submit" class="btn btn--sm btn--ghost">Slet</button>
@@ -69,7 +67,7 @@
                     <div class="admin-row__main">
                         <a asp-controller="Bets" asp-action="Details" asp-route-id="@c.Bet.Id"><strong>@c.Bet.Title</strong></a>
                         <div class="muted small">
-                            <span class="@(c.Bet.Outcome == BetOutcome.Yes ? "yes" : "no")">@(c.Bet.Outcome == BetOutcome.Yes ? "PÅ" : "IMOD") vandt</span>
+                            <span class="@c.Bet.Outcome.CssClass()">@c.Bet.Outcome.Label()</span>
                             @if (c.Bet.ResolvedAt is DateTime resolvedAt)
                             {
                                 <text>· afgjort @resolvedAt.ToLocalTime().ToString("d. MMM yyyy")</text>

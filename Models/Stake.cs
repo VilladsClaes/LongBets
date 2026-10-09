@@ -26,4 +26,12 @@ public class Stake
     public string? Reasoning { get; set; }
 
     public DateTime PlacedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>SHA-256 af browserens spiller-cookie, så vinderen senere kan skrive sin forklaring.</summary>
+    [StringLength(64)]
+    public string? OwnerKey { get; set; }
+
+    /// <summary>Vinderens »Jeg fik ret fordi …«.</summary>
+    [StringLength(600)]
+    public string? WinNote { get; set; }
 }

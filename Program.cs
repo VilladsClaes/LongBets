@@ -31,6 +31,21 @@ builder.Services.AddHttpClient(NewsImporter.HttpClientName, http =>
     http.DefaultRequestHeaders.Accept.ParseAdd("application/rss+xml, application/xml;q=0.9, text/xml;q=0.8, */*;q=0.5");
 });
 builder.Services.AddScoped<NewsImporter>();
+
+// Forhåndsvisning af links, når man opretter et bet ud fra en artikel. Forbinder kun til offentlige adresser.
+builder.Services.AddHttpClient(LinkPreview.HttpClientName, http =>
+    {
+        http.Timeout = TimeSpan.FromSeconds(10);
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; LongBets/1.0; +https://longbets.villadsclaes.dk)");
+        http.DefaultRequestHeaders.Accept.ParseAdd("text/html, application/xhtml+xml;q=0.9, */*;q=0.5");
+    })
+    .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+    {
+        ConnectCallback = LinkPreview.ConnectToPublicAddress,
+        MaxAutomaticRedirections = 5,
+        UseCookies = false,
+    });
+builder.Services.AddScoped<LinkPreview>();
 builder.Services.AddSingleton<NewsRefreshService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<NewsRefreshService>());
 
@@ -57,6 +72,10 @@ builder.Services.AddRateLimiter(o =>
     o.AddPolicy("login", context => RateLimitPartition.GetFixedWindowLimiter(
         context.Connection.RemoteIpAddress?.ToString() ?? "ukendt",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromMinutes(1) }));
+    // Link-forhåndsvisning henter fremmede sider, så den må ikke kunne bruges som gratis proxy.
+    o.AddPolicy("link", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "ukendt",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromMinutes(1) }));
 });
 // Skriv æ, ø og å direkte i HTML i stedet for &#xE6; osv.
 builder.Services.Configure<WebEncoderOptions>(o => o.TextEncoderSettings = new TextEncoderSettings(UnicodeRanges.All));

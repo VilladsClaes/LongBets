@@ -8,7 +8,7 @@
         <span class="chip">@bet.Category.Icon() @bet.Category</span>
         @if (bet.Outcome != BetOutcome.Open)
         {
-            <span class="chip chip--done">Afgjort: @(bet.Outcome == BetOutcome.Yes ? "PÅ" : "IMOD")</span>
+            <span class="chip chip--done">@bet.Outcome.Label()</span>
         }
         else if (badge is not null)
         {

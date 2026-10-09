@@ -42,6 +42,19 @@
             </div>
         }
 
+        @if (news is null)
+        {
+            <div class="field" data-link-preview>
+                <label for="link">Link til en artikel (valgfri)</label>
+                <div class="field__row">
+                    <input id="link" name="link" type="url" value="@ViewBag.Link" maxlength="1000" placeholder="https://…" inputmode="url" />
+                    <button type="button" class="btn btn--sm btn--ghost" data-link-fetch>Hent</button>
+                </div>
+                <span class="field__error">@Html.ValidationMessage("link")</span>
+                <div class="link-preview" data-link-result hidden></div>
+            </div>
+        }
+
         <div class="field">
             <label asp-for="Title"></label>
             <input asp-for="Title" placeholder="Fx »Rundkørsler bliver forstået af alle bilister inden 2040«" />
@@ -78,6 +91,7 @@
     <aside class="panel">
         <h3 class="panel__title">📜 Regler for gode bets</h3>
         <ul class="rules">
+            <li><strong>Gerne med kilde.</strong> Indsæt et link til artiklen, så kan alle se, hvad bettet handler om.</li>
             <li><strong>Mindst et år ude.</strong> Vi hedder ikke ShortBets.</li>
             <li><strong>Klart ja eller nej.</strong> »Det bliver lidt bedre« er ikke et bet. Det er en politisk tale.</li>
             <li><strong>Ingen privatpersoner.</strong> Politikere og direktører i nyhederne må gerne. Naboens skilsmisse må ikke. Det er ikke satire, det er bare ondt.</li>

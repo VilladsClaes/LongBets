@@ -10,9 +10,10 @@ Bygget med ASP.NET Core MVC (.NET 10) og Entity Framework Core med SQLite.
 - Forside med ticker over seneste indsatser, statistik og rangliste over "Største pralere"
 - Oversigt over bets med filtrering på kategori og sortering
 - Detaljeside med odds (totalisator), kupon og liste over indsatser
-- Opret dit eget bet
+- Opret dit eget bet, evt. ud fra et link til en artikel (titel og billede hentes automatisk, kun fra offentlige adresser)
+- Vinderne kan skrive "Jeg fik ret fordi …" på et afgjort bet. Genkendes via en anonym cookie, så det kræver ingen konto
 - Kontaktformular, hvor beskeder gemmes i databasen
-- Admin-side (`/Admin`): afgør eller genåbn bets, slet bets, læs og slet kontaktbeskeder, se status for hvert nyhedsfeed og hent nyheder med det samme
+- Admin-side (`/Admin`): afgør (PÅ, IMOD eller annullér, med begrundelse) eller genåbn bets, slet bets, læs og slet kontaktbeskeder, se status for hvert nyhedsfeed og hent nyheder med det samme
 
 ## Admin-adgangskode
 

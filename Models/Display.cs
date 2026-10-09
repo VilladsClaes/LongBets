@@ -15,6 +15,22 @@ public static class Display
 
     public static string Odds(this decimal odds) => odds.ToString("0.00");
 
+    /// <summary>Kort mærkat for et afgjort bet, fx »PÅ vandt«.</summary>
+    public static string Label(this BetOutcome outcome) => outcome switch
+    {
+        BetOutcome.Yes => "PÅ vandt",
+        BetOutcome.No => "IMOD vandt",
+        BetOutcome.Void => "Annulleret",
+        _ => "Åben",
+    };
+
+    public static string CssClass(this BetOutcome outcome) => outcome switch
+    {
+        BetOutcome.Yes => "yes",
+        BetOutcome.No => "no",
+        _ => "muted",
+    };
+
     public static string Countdown(this DateOnly resolvesOn)
     {
         var days = resolvesOn.DayNumber - DateOnly.FromDateTime(DateTime.Today).DayNumber;
