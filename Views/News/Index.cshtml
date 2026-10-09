@@ -1,0 +1,42 @@
+@model NewsListViewModel
+@{
+    ViewData["Title"] = "Nyheder";
+}
+
+<section class="page-head">
+    <div class="container">
+        <p class="eyebrow">Live fra de danske medier</p>
+        <h1>Dagens nyheder</h1>
+        <p class="lead">Alt det, Danmark taler om lige nu. Find en historie, og sæt odds på, hvordan den ser ud om et år. Eller om nogen overhovedet kan huske den.</p>
+        @if (Model.LastUpdate is DateTime last)
+        {
+            <p class="muted small">Opdateres hvert 10. minut · senest @last.TimeAgo()</p>
+        }
+    </div>
+</section>
+
+<section class="container section">
+    <nav class="filters__group filters" aria-label="Medie">
+        <a class="pill @(Model.Source is null ? "is-active" : "")" asp-action="Index">Alle medier</a>
+        @foreach (var s in LongBets.News.NewsSources.All)
+        {
+            <a class="pill @(Model.Source == s.Id ? "is-active" : "")" asp-action="Index" asp-route-source="@s.Id">@s.Name</a>
+        }
+    </nav>
+
+    @if (Model.Items.Count == 0)
+    {
+        <div class="empty">
+            <p>Ingen nyheder endnu. Sneglen er ude og hente dem. Prøv at genindlæse siden om et øjeblik.</p>
+        </div>
+    }
+    else
+    {
+        <div class="news-grid">
+            @foreach (var n in Model.Items)
+            {
+                <partial name="_NewsItem" model="(n, Model.BetCounts.GetValueOrDefault(n.Url))" />
+            }
+        </div>
+    }
+</section>

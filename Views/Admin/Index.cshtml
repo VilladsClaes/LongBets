@@ -1,0 +1,155 @@
+@model AdminViewModel
+@{
+    ViewData["Title"] = "Admin";
+    var unread = Model.Messages.Count(m => !m.IsRead);
+}
+
+<section class="page-head">
+    <div class="container admin-head">
+        <div>
+            <p class="eyebrow">Bag disken</p>
+            <h1>Admin</h1>
+            <p class="lead">Afgør bets, ryd op og læs, hvad folk har på hjerte.</p>
+        </div>
+        <form asp-action="Logout" method="post">
+            <button type="submit" class="btn btn--ghost">Log ud</button>
+        </form>
+    </div>
+    <div class="container stats stats--compact">
+        <div class="stat"><span class="stat__value">@Model.Open.Count</span><span class="stat__label">åbne bets</span></div>
+        <div class="stat"><span class="stat__value">@Model.Resolved.Count</span><span class="stat__label">afgjorte bets</span></div>
+        <div class="stat"><span class="stat__value">@unread</span><span class="stat__label">ulæste beskeder</span></div>
+    </div>
+</section>
+
+<section class="container section">
+    <h2>Åbne bets</h2>
+    @if (Model.Open.Count == 0)
+    {
+        <p class="muted">Ingen åbne bets.</p>
+    }
+    else
+    {
+        <div class="admin-table">
+            @foreach (var c in Model.Open)
+            {
+                <div class="admin-row">
+                    <div class="admin-row__main">
+                        <a asp-controller="Bets" asp-action="Details" asp-route-id="@c.Bet.Id"><strong>@c.Bet.Title</strong></a>
+                        <div class="muted small">
+                            @c.Bet.Category.Icon() @c.Bet.Category · af @c.Bet.CreatedBy · afgøres senest @c.Bet.ResolvesOn.ToString("d. MMM yyyy")
+                            · @c.TotalPool.ToString("N0") PK · PÅ @c.YesOdds.Odds() / IMOD @c.NoOdds.Odds()
+                        </div>
+                    </div>
+                    <div class="admin-row__actions">
+                        <form class="resolve-form" asp-action="Resolve" asp-route-id="@c.Bet.Id" method="post" data-confirm="Afgør »@c.Bet.Title«? Afgørelsen vises på bettet.">
+                            <input type="text" name="note" maxlength="1000" placeholder="Begrundelse (valgfri)" aria-label="Begrundelse for afgørelsen" />
+                            <button type="submit" name="outcome" value="@BetOutcome.Yes" class="btn btn--sm btn--yes">PÅ vandt</button>
+                            <button type="submit" name="outcome" value="@BetOutcome.No" class="btn btn--sm btn--no">IMOD vandt</button>
+                            <button type="submit" name="outcome" value="@BetOutcome.Void" class="btn btn--sm btn--ghost">Annullér</button>
+                        </form>
+                        <form asp-action="DeleteBet" asp-route-id="@c.Bet.Id" method="post" data-confirm="Slet »@c.Bet.Title« og alle @c.StakeCount indsatser permanent?">
+                            <button type="submit" class="btn btn--sm btn--ghost">Slet</button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    @if (Model.Resolved.Count > 0)
+    {
+        <h2 class="section-title">Afgjorte bets</h2>
+        <div class="admin-table">
+            @foreach (var c in Model.Resolved)
+            {
+                <div class="admin-row">
+                    <div class="admin-row__main">
+                        <a asp-controller="Bets" asp-action="Details" asp-route-id="@c.Bet.Id"><strong>@c.Bet.Title</strong></a>
+                        <div class="muted small">
+                            <span class="@c.Bet.Outcome.CssClass()">@c.Bet.Outcome.Label()</span>
+                            @if (c.Bet.ResolvedAt is DateTime resolvedAt)
+                            {
+                                <text>· afgjort @resolvedAt.ToLocalTime().ToString("d. MMM yyyy")</text>
+                            }
+                            · @c.TotalPool.ToString("N0") PK
+                        </div>
+                    </div>
+                    <div class="admin-row__actions">
+                        <form asp-action="Resolve" asp-route-id="@c.Bet.Id" method="post">
+                            <input type="hidden" name="outcome" value="@BetOutcome.Open" />
+                            <button type="submit" class="btn btn--sm btn--ghost">Genåbn</button>
+                        </form>
+                        <form asp-action="DeleteBet" asp-route-id="@c.Bet.Id" method="post" data-confirm="Slet »@c.Bet.Title« og alle @c.StakeCount indsatser permanent?">
+                            <button type="submit" class="btn btn--sm btn--ghost">Slet</button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <h2 id="nyheder" class="section-title">Nyhedsfeeds <span class="muted">(@Model.NewsCount nyheder i databasen)</span></h2>
+    <div class="admin-table">
+        @foreach (var source in LongBets.News.NewsSources.All)
+        {
+            var state = Model.Feeds.FirstOrDefault(f => f.Source == source.Id);
+            <div class="admin-row">
+                <div class="admin-row__main">
+                    <partial name="_NewsSourceTag" model="source.Id" />
+                    @if (state is null)
+                    {
+                        <span class="muted small">Ikke hentet endnu</span>
+                    }
+                    else if (state.Ok)
+                    {
+                        <span class="small"><span class="yes">OK</span> · @state.Count i feedet · @state.LastFetch.TimeAgo()</span>
+                    }
+                    else
+                    {
+                        <span class="small"><span class="no">Fejl</span> · @state.LastFetch.TimeAgo() · @state.Error</span>
+                    }
+                    <div class="muted small feed-url">@string.Join(" · ", source.Urls)</div>
+                </div>
+            </div>
+        }
+    </div>
+    <form asp-action="RefreshNews" method="post" class="admin-refresh">
+        <button type="submit" class="btn btn--sm btn--ghost">↻ Hent nyheder nu</button>
+    </form>
+
+    <h2 id="beskeder" class="section-title">Kontaktbeskeder</h2>
+    @if (Model.Messages.Count == 0)
+    {
+        <p class="muted">Ingen beskeder. Sneglen keder sig.</p>
+    }
+    else
+    {
+        <div class="admin-table">
+            @foreach (var m in Model.Messages)
+            {
+                <div class="admin-row @(m.IsRead ? "is-read" : "")">
+                    <div class="admin-row__main">
+                        <div>
+                            @if (!m.IsRead)
+                            {
+                                <span class="chip chip--hot">Ny</span>
+                            }
+                            <strong>@m.Name</strong> · <a href="mailto:@m.Email">@m.Email</a>
+                            <span class="muted small">· @m.SentAt.ToLocalTime().ToString("d. MMM yyyy HH:mm")</span>
+                        </div>
+                        <p class="admin-message">@m.Message</p>
+                    </div>
+                    <div class="admin-row__actions">
+                        <form asp-action="ToggleRead" asp-route-id="@m.Id" method="post">
+                            <button type="submit" class="btn btn--sm btn--ghost">@(m.IsRead ? "Markér som ulæst" : "Markér som læst")</button>
+                        </form>
+                        <form asp-action="DeleteMessage" asp-route-id="@m.Id" method="post" data-confirm="Slet beskeden fra @m.Name permanent?">
+                            <button type="submit" class="btn btn--sm btn--ghost">Slet</button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</section>

@@ -1,0 +1,24 @@
+@{
+    ViewData["Title"] = "Admin-login";
+}
+
+<section class="container section">
+    <form class="panel form login" asp-action="Login" asp-route-returnUrl="@ViewBag.ReturnUrl" method="post">
+        <p class="eyebrow">Bag disken</p>
+        <h1>Admin</h1>
+
+        @if (ViewBag.Disabled == true)
+        {
+            <p class="form__errors">Admin er slået fra, fordi der ikke er sat nogen adgangskode. Sæt <code>Admin:Password</code> i konfigurationen på serveren.</p>
+        }
+        else
+        {
+            <div asp-validation-summary="ModelOnly" class="form__errors"></div>
+            <div class="field">
+                <label for="password">Adgangskode</label>
+                <input id="password" name="password" type="password" autocomplete="current-password" required autofocus />
+            </div>
+            <button type="submit" class="btn btn--accent btn--lg btn--block">Log ind</button>
+        }
+    </form>
+</section>

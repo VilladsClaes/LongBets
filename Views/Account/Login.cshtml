@@ -1,0 +1,39 @@
+@using Microsoft.AspNetCore.Authentication
+@{
+    ViewData["Title"] = "Log ind";
+    var providers = (List<AuthenticationScheme>)ViewBag.Providers;
+}
+
+<section class="container section">
+    <div class="panel form login">
+        <p class="eyebrow">Spillerkonto</p>
+        <h1>Log ind</h1>
+        <p class="muted">Log ind for at satse, oprette bets og holde øje med dine væddemål. Nye spillere starter med @Player.StartBalance.ToString("N0") Pralkroner og får @Player.DailyBonus i bonus hver dag, de kigger forbi.</p>
+
+        @if (providers.Count == 0 && ViewBag.DevLogin != true)
+        {
+            <p class="form__errors">Login er ikke sat op endnu. Kom tilbage senere, fremtiden løber ingen steder.</p>
+        }
+
+        @foreach (var provider in providers)
+        {
+            <form asp-action="ExternalLogin" asp-route-returnUrl="@ViewBag.ReturnUrl" method="post">
+                <input type="hidden" name="provider" value="@provider.Name" />
+                <button type="submit" class="btn btn--accent btn--lg btn--block">Log ind med @provider.DisplayName</button>
+            </form>
+        }
+
+        @if (ViewBag.DevLogin == true)
+        {
+            <form class="form" asp-action="DevLogin" asp-route-returnUrl="@ViewBag.ReturnUrl" method="post">
+                <div class="field">
+                    <label for="name">Testlogin (kun under udvikling)</label>
+                    <input id="name" name="name" value="Testspiller" maxlength="60" />
+                </div>
+                <button type="submit" class="btn btn--ghost btn--block">Log ind som testspiller</button>
+            </form>
+        }
+
+        <p class="muted small">Vi gemmer kun dit navn og din e-mail fra Google. Ingen adgangskoder, ingen nyhedsbreve, ingen rigtige penge.</p>
+    </div>
+</section>

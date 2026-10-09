@@ -1,0 +1,188 @@
+@model BetDetailsViewModel
+@inject LongBets.Accounts.PlayerService Players
+@{
+    var me = await Players.CurrentAsync();
+    var card = Model.Card;
+    var bet = card.Bet;
+    ViewData["Title"] = bet.Title;
+}
+
+<section class="page-head">
+    <div class="container">
+        <a class="link-back" asp-action="Index">← Alle bets</a>
+        <div class="bet-card__meta">
+            <span class="chip">@bet.Category.Icon() @bet.Category</span>
+            @if (card.Badge() is string badge && bet.Outcome == BetOutcome.Open)
+            {
+                <span class="chip chip--hot">@badge</span>
+            }
+        </div>
+        <h1 class="detail-title">@bet.Title</h1>
+        @if (bet.NewsUrl is not null)
+        {
+            <div class="news-ref">
+                <span class="muted small">Baseret på nyheden</span>
+                <partial name="_NewsSourceTag" model="bet.NewsSource" />
+                <a href="@bet.NewsUrl" target="_blank" rel="noopener nofollow">@bet.NewsTitle ↗</a>
+            </div>
+        }
+        @if (!string.IsNullOrWhiteSpace(bet.Description))
+        {
+            <p class="lead">@bet.Description</p>
+        }
+        <p class="muted small">
+            Oprettet af <strong>@bet.CreatedBy</strong> den @bet.CreatedAt.ToLocalTime().ToString("d. MMMM yyyy")
+            · Afgøres senest @bet.ResolvesOn.ToString("d. MMMM yyyy") (@bet.ResolvesOn.Countdown())
+        </p>
+    </div>
+</section>
+
+<section class="container section layout-sidebar">
+    <div>
+        <div class="big-odds">
+            <div class="big-odds__side big-odds__side--yes">
+                <span class="big-odds__label">PÅ</span>
+                <span class="big-odds__value">@card.YesOdds.Odds()</span>
+                <span class="big-odds__pct">@card.YesPercent % af puljen</span>
+            </div>
+            <div class="big-odds__vs">vs</div>
+            <div class="big-odds__side big-odds__side--no">
+                <span class="big-odds__label">IMOD</span>
+                <span class="big-odds__value">@card.NoOdds.Odds()</span>
+                <span class="big-odds__pct">@(100 - card.YesPercent) % af puljen</span>
+            </div>
+        </div>
+        <div class="meter meter--lg"><span style="width:@card.YesPercent%"></span></div>
+
+        <h2 class="section-title">Seneste indsatser <span class="muted">(@card.StakeCount)</span></h2>
+        @if (bet.Stakes.Count == 0)
+        {
+            <p class="muted">Ingen har turdet endnu. Odds er rent gætteri. Ligesom resten af siden.</p>
+        }
+        else
+        {
+            <ul class="stake-list">
+                @foreach (var s in bet.Stakes)
+                {
+                    <li class="stake">
+                        <span class="stake__side @(s.OnYes ? "yes" : "no")">@(s.OnYes ? "PÅ" : "IMOD")</span>
+                        <div class="stake__body">
+                            <div><strong>@s.PlayerName</strong> · @s.Amount.ToString("N0") PK <span class="muted small">· @s.PlacedAt.ToLocalTime().ToString("d. MMM yyyy")</span></div>
+                            @if (!string.IsNullOrWhiteSpace(s.Reasoning))
+                            {
+                                <q class="stake__why">@s.Reasoning</q>
+                            }
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+
+    <aside id="stake" class="panel betslip">
+        <h3 class="panel__title">🎟️ Kupon</h3>
+        @if (bet.Outcome == BetOutcome.Void)
+        {
+            <p>Det her bet er <strong>annulleret</strong>. Ingen vandt, ingen tabte, og alle har fået deres Pralkroner retur. Sneglen er skuffet.</p>
+            @if (bet.ResolutionNote is not null)
+            {
+                <p class="resolution-note"><strong>Begrundelse:</strong> @bet.ResolutionNote</p>
+            }
+        }
+        else if (bet.Outcome != BetOutcome.Open)
+        {
+            var yesWon = bet.Outcome == BetOutcome.Yes;
+            var winOdds = yesWon ? card.YesOdds : card.NoOdds;
+            var winners = bet.Stakes.Where(s => s.OnYes == yesWon).OrderByDescending(s => s.Amount).ToList();
+            <p>Det her bet er afgjort: <strong class="@bet.Outcome.CssClass()">@(yesWon ? "PÅ" : "IMOD")</strong> vandt. Tillykke til de forudseende og kondolencer til resten.</p>
+            @if (bet.ResolutionNote is not null)
+            {
+                <p class="resolution-note"><strong>Begrundelse:</strong> @bet.ResolutionNote</p>
+            }
+            @if (winners.Count > 0)
+            {
+                <h4>Udbetalinger (i Pralkroner, naturligvis)</h4>
+                <ol class="leaderboard winners">
+                    @foreach (var w in winners)
+                    {
+                        <li>
+                            <span class="leaderboard__name">
+                                @w.PlayerName
+                                @if (w.WinNote is not null)
+                                {
+                                    <q class="win-note">@w.WinNote</q>
+                                }
+                            </span>
+                            <span class="leaderboard__value">@((w.Payout ?? LongBets.Data.Settlement.Payout(w.Amount, winOdds)).ToString("N0")) PK</span>
+                        </li>
+                    }
+                </ol>
+            }
+            else
+            {
+                <p class="muted">Ingen satsede på den rigtige side. Huset vinder, og huset er en snegl.</p>
+            }
+
+            @if (Model.OwnWinningStake is { } mine)
+            {
+                <form class="form" asp-action="WinNote" asp-route-id="@bet.Id" method="post">
+                    <div class="field">
+                        <label for="note">Du fik ret, @mine.PlayerName. Jeg fik ret fordi …</label>
+                        <textarea id="note" name="note" rows="3" maxlength="600" required placeholder="Fx »Jeg læste faktisk artiklen«">@mine.WinNote</textarea>
+                    </div>
+                    <button type="submit" class="btn btn--accent btn--block">@(mine.WinNote is null ? "Prål offentligt" : "Ret min forklaring")</button>
+                </form>
+            }
+        }
+        else if (me is null)
+        {
+            <p>Log ind for at satse. Nye spillere får @Player.StartBalance.ToString("N0") Pralkroner at prale med og @Player.DailyBonus mere hver dag.</p>
+            <p class="muted small">Odds lige nu: PÅ @card.YesOdds.Odds() · IMOD @card.NoOdds.Odds()</p>
+            <a class="btn btn--accent btn--lg btn--block" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Url.Action("Details", new { id = bet.Id })">Log ind og sats</a>
+        }
+        else
+        {
+            <form class="form" asp-action="PlaceStake" asp-route-id="@bet.Id" method="post" data-betslip data-yes-odds="@card.YesOdds.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-no-odds="@card.NoOdds.ToString(System.Globalization.CultureInfo.InvariantCulture)">
+                <div asp-validation-summary="ModelOnly" class="form__errors"></div>
+
+                <div class="side-picker" role="radiogroup" aria-label="Vælg side">
+                    <label class="side-picker__opt side-picker__opt--yes">
+                        <input type="radio" name="NewStake.OnYes" value="true" checked="@(Model.NewStake.OnYes)" />
+                        <span>PÅ <b>@card.YesOdds.Odds()</b></span>
+                    </label>
+                    <label class="side-picker__opt side-picker__opt--no">
+                        <input type="radio" name="NewStake.OnYes" value="false" checked="@(!Model.NewStake.OnYes)" />
+                        <span>IMOD <b>@card.NoOdds.Odds()</b></span>
+                    </label>
+                </div>
+
+                <p class="muted small">Du satser som <strong>@me!.DisplayName</strong> og har <strong>@me.Balance.ToString("N0") PK</strong> på kontoen.</p>
+
+                <div class="field">
+                    <label asp-for="NewStake.Amount"></label>
+                    <input asp-for="NewStake.Amount" type="number" min="1" max="@Math.Min(10_000, me.Balance)" step="1" />
+                    <div class="quick-amounts">
+                        <button type="button" data-amount="10">10</button>
+                        <button type="button" data-amount="100">100</button>
+                        <button type="button" data-amount="1000">1.000</button>
+                        <button type="button" data-amount="@Math.Min(10_000, me.Balance)">All in</button>
+                    </div>
+                    <span asp-validation-for="NewStake.Amount" class="field__error"></span>
+                </div>
+
+                <div class="field">
+                    <label asp-for="NewStake.Reasoning"></label>
+                    <input asp-for="NewStake.Reasoning" placeholder="Fx »Min mavefornemmelse har aldrig taget fejl«" />
+                </div>
+
+                <div class="payout">
+                    <span>Mulig gevinst (ca.)</span>
+                    <strong data-payout>–</strong>
+                </div>
+
+                <button type="submit" class="btn btn--accent btn--lg btn--block">Placér indsats</button>
+                <p class="muted small center">Gevinster udbetales i Pralkroner og god karma.</p>
+            </form>
+        }
+    </aside>
+</section>

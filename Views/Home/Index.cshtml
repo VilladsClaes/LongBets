@@ -1,0 +1,115 @@
+@model HomeViewModel
+
+@if (Model.Ticker.Count > 0)
+{
+    <div class="ticker" aria-label="Seneste indsatser">
+        <div class="ticker__track">
+            @for (var pass = 0; pass < 2; pass++)
+            {
+                foreach (var t in Model.Ticker)
+                {
+                    <a class="ticker__item" asp-controller="Bets" asp-action="Details" asp-route-id="@t.BetId" aria-hidden="@(pass == 1 ? "true" : null)" tabindex="@(pass == 1 ? "-1" : null)">
+                        <strong>@t.PlayerName</strong> satte @t.Amount.ToString("N0") PK
+                        <span class="@(t.OnYes ? "yes" : "no")">@(t.OnYes ? "PÅ" : "IMOD")</span>
+                        »@t.BetTitle«
+                    </a>
+                }
+            }
+        </div>
+    </div>
+}
+
+<section class="hero">
+    <div class="container hero__grid">
+        <div>
+            <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span> Live-odds på dagens nyheder · Afgøres tidligst om 1 år</p>
+            <h1 class="hero__title">Sæt dine <span class="accent">Pralkroner</span> på fremtiden</h1>
+            <p class="hero__lead">Vi henter nyhederne fra DR, Politiken, Berlingske og resten hvert tiende minut. Du sætter odds på, hvordan de ser ud om et år. Så kan du endelig bevise, at du havde ret, længe efter at alle har glemt diskussionen.</p>
+            <div class="hero__actions">
+                <a class="btn btn--accent btn--lg" asp-controller="News" asp-action="Index">Bet på dagens nyheder</a>
+                <a class="btn btn--ghost btn--lg" asp-controller="Bets" asp-action="Index">Se alle odds</a>
+            </div>
+        </div>
+
+        <aside class="promo">
+            <div class="promo__ribbon">Velkomstbonus</div>
+            <div class="promo__amount">0 kr.</div>
+            <p>Vi lover ikke mere, end vi kan holde. Til gengæld får du ubegrænsede Pralkroner, der er præcis lige så meget værd.</p>
+            <ul class="promo__list">
+                <li>✔ Ingen indbetaling</li>
+                <li>✔ Ingen udbetaling</li>
+                <li>✔ Ingen idé om, hvem der vinder</li>
+            </ul>
+        </aside>
+    </div>
+
+    <div class="container stats">
+        <div class="stat"><span class="stat__value">@Model.TotalBets</span><span class="stat__label">åbne bets</span></div>
+        <div class="stat"><span class="stat__value">@Model.TotalPool.ToString("N0")</span><span class="stat__label">Pralkroner i puljen</span></div>
+        <div class="stat"><span class="stat__value">@Model.TotalPlayers</span><span class="stat__label">selvsikre spillere</span></div>
+        <div class="stat"><span class="stat__value">0</span><span class="stat__label">udbetalinger til dato</span></div>
+    </div>
+</section>
+
+<section class="container section">
+    <div class="section__head">
+        <h2><span class="live-dot" aria-hidden="true"></span> Breaking: sæt odds på dagens nyheder</h2>
+        <a class="link-arrow" asp-controller="News" asp-action="Index">Alle nyheder →</a>
+    </div>
+    @if (Model.News.Count == 0)
+    {
+        <div class="empty">Nyhederne er på vej. Sneglen henter dem lige nu, så prøv at genindlæse om et øjeblik.</div>
+    }
+    else
+    {
+        <div class="news-grid">
+            @foreach (var n in Model.News)
+            {
+                <partial name="_NewsItem" model="(n, 0)" />
+            }
+        </div>
+    }
+</section>
+
+<section class="container section">
+    <div class="section__head">
+        <h2>Mest spillede lige nu</h2>
+        <a class="link-arrow" asp-controller="Bets" asp-action="Index">Alle bets →</a>
+    </div>
+
+    <div class="layout-sidebar">
+        <div class="card-grid">
+            @foreach (var card in Model.Featured)
+            {
+                <partial name="_BetCard" model="card" />
+            }
+        </div>
+
+        <aside class="panel">
+            <h3 class="panel__title">🏆 Største pralere</h3>
+            <p class="muted small">Ranglisten over dem, der har sat flest Pralkroner på spil. Om de har ret, finder vi ud af om 10–20 år.</p>
+            <ol class="leaderboard">
+                @foreach (var b in Model.Braggarts)
+                {
+                    <li>
+                        <span class="leaderboard__name">@b.PlayerName</span>
+                        <span class="leaderboard__value">@b.TotalStaked.ToString("N0") PK</span>
+                    </li>
+                }
+            </ol>
+            <div class="panel__note">
+                <strong>Dagens tip fra Sneglen Svend:</strong>
+                <span>»Alt tager længere tid, end man tror. Undtagen salat. Den forsvinder hurtigt.«</span>
+            </div>
+        </aside>
+    </div>
+</section>
+
+<section class="container section how">
+    <h2>Sådan virker det</h2>
+    <div class="how__grid">
+        <div class="how__step"><span class="how__num">1</span><h3>Find en påstand</h3><p>Eller opret din egen. Den skal bare tidligst kunne afgøres om et år. Vi er ikke en kortsigtet forretning, vi er knap nok en forretning.</p></div>
+        <div class="how__step"><span class="how__num">2</span><h3>Vælg PÅ eller IMOD</h3><p>Satsen er i Pralkroner. De koster ingenting og er værd endnu mindre. Odds bestemmes af, hvordan alle andre har spillet.</p></div>
+        <div class="how__step"><span class="how__num">3</span><h3>Vent</h3><p>Og vent. Og vent lidt mere. Når fremtiden indtræffer, får du ret. Eller ikke. Uanset hvad har du noget at fortælle til julefrokosten.</p></div>
+    </div>
+</section>
