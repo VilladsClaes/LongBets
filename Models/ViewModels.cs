@@ -57,3 +57,25 @@ public class BetDetailsViewModel
     /// <summary>Den besøgendes egen vindende indsats, så de kan skrive »Jeg fik ret fordi …«.</summary>
     public Stake? OwnWinningStake { get; init; }
 }
+
+/// <summary>En af spillerens egne indsatser med bettets aktuelle odds.</summary>
+public record MyStake(Stake Stake, BetCard Card)
+{
+    /// <summary>Gevinst minus indsats, når bettet er afgjort.</summary>
+    public int? Net => Stake.Payout is int payout ? payout - Stake.Amount : null;
+
+    /// <summary>Hvad indsatsen giver, hvis den vinder med de odds, der gælder nu.</summary>
+    public int PotentialPayout => Data.Settlement.Payout(Stake.Amount, Stake.OnYes ? Card.YesOdds : Card.NoOdds);
+}
+
+public class MyBetsViewModel
+{
+    public required Player Player { get; init; }
+    public required List<MyStake> Stakes { get; init; }
+    public required List<BetCard> Created { get; init; }
+
+    public IEnumerable<MyStake> Open => Stakes.Where(s => s.Stake.Bet!.Outcome == BetOutcome.Open);
+    public IEnumerable<MyStake> Resolved => Stakes.Where(s => s.Stake.Bet!.Outcome != BetOutcome.Open);
+    public int AtStake => Open.Sum(s => s.Stake.Amount);
+    public int NetResult => Resolved.Sum(s => s.Net ?? 0);
+}

@@ -1,18 +1,16 @@
-using System.Security.Cryptography;
+using LongBets.Accounts;
 using LongBets.Data;
 using LongBets.Models;
 using LongBets.News;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace LongBets.Controllers;
 
-public class BetsController(AppDbContext db, LinkPreview linkPreview) : Controller
+public class BetsController(AppDbContext db, LinkPreview linkPreview, PlayerService players) : Controller
 {
-    // Anonym spiller-id i en cookie. Kun en hash gemmes på indsatsen, så vinderen kan genkendes senere.
-    private const string PlayerCookie = "LongBets.Player";
-
     public async Task<IActionResult> Index(BetCategory? category, string? news, string sort = "hot")
     {
         var query = db.Bets.AsNoTracking().Include(b => b.Stakes).AsQueryable();
@@ -36,38 +34,54 @@ public class BetsController(AppDbContext db, LinkPreview linkPreview) : Controll
         var bet = await LoadBet(id);
         if (bet is null) return NotFound();
 
-        return View(DetailsModel(bet, new Stake { BetId = id, Amount = 100, OnYes = true }));
+        return View(await DetailsModel(bet, new Stake { BetId = id, Amount = 100, OnYes = true }));
     }
 
+    [Authorize]
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> PlaceStake(int id, [Bind(nameof(Stake.PlayerName), nameof(Stake.OnYes), nameof(Stake.Amount), nameof(Stake.Reasoning), Prefix = "NewStake")] Stake stake)
+    public async Task<IActionResult> PlaceStake(int id, [Bind(nameof(Stake.OnYes), nameof(Stake.Amount), nameof(Stake.Reasoning), Prefix = "NewStake")] Stake stake)
     {
         var bet = await LoadBet(id);
         if (bet is null) return NotFound();
+        var player = await players.CurrentAsync();
+        if (player is null) return Challenge();
 
+        // Navnet kommer fra kontoen, ikke fra formularen.
+        ModelState.Remove("NewStake.PlayerName");
         if (bet.Outcome != BetOutcome.Open)
             ModelState.AddModelError("", "Det her bet er afgjort. Man kan ikke satse på fortiden, det hedder bagklogskab.");
+        if (ModelState.IsValid && stake.Amount > player.Balance)
+            ModelState.AddModelError("NewStake.Amount", $"Du har kun {player.Balance:N0} Pralkroner. Kom igen i morgen efter din bonus.");
 
-        if (!ModelState.IsValid)
-            return View(nameof(Details), DetailsModel(bet, stake));
-
-        db.Stakes.Add(new Stake
+        if (ModelState.IsValid)
         {
-            BetId = id,
-            PlayerName = stake.PlayerName.Trim(),
-            OnYes = stake.OnYes,
-            Amount = stake.Amount,
-            Reasoning = string.IsNullOrWhiteSpace(stake.Reasoning) ? null : stake.Reasoning.Trim(),
-            OwnerKey = PlayerKey(createIfMissing: true),
-        });
-        await db.SaveChangesAsync();
+            await using var tx = await db.Database.BeginTransactionAsync();
+            if (await players.TryWithdrawAsync(player.UserId, stake.Amount))
+            {
+                db.Stakes.Add(new Stake
+                {
+                    BetId = id,
+                    UserId = player.UserId,
+                    PlayerName = player.DisplayName,
+                    OnYes = stake.OnYes,
+                    Amount = stake.Amount,
+                    Reasoning = string.IsNullOrWhiteSpace(stake.Reasoning) ? null : stake.Reasoning.Trim(),
+                });
+                await db.SaveChangesAsync();
+                await tx.CommitAsync();
 
-        TempData["Toast"] = $"{stake.Amount:N0} Pralkroner sat {(stake.OnYes ? "PÅ" : "IMOD")}. Held og lykke. Du får brug for det.";
-        return RedirectToAction(nameof(Details), new { id });
+                TempData["Toast"] = $"{stake.Amount:N0} Pralkroner sat {(stake.OnYes ? "PÅ" : "IMOD")}. Held og lykke. Du får brug for det.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+            ModelState.AddModelError("NewStake.Amount", "Saldoen rakte ikke. Nogen har vist brugt dine Pralkroner i et andet vindue.");
+        }
+
+        return View(nameof(Details), await DetailsModel(bet, stake));
     }
 
     /// <summary>Vinderen skriver »Jeg fik ret fordi …« på sin egen indsats.</summary>
+    [Authorize]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> WinNote(int id, string? note)
@@ -75,7 +89,7 @@ public class BetsController(AppDbContext db, LinkPreview linkPreview) : Controll
         var bet = await LoadBet(id);
         if (bet is null) return NotFound();
 
-        var winning = OwnWinningStake(bet);
+        var winning = await OwnWinningStake(bet);
         var text = note?.Trim() ?? "";
         if (winning is null)
             TempData["Toast"] = "Det er kun vinderne, der får lov at prale her.";
@@ -99,6 +113,7 @@ public class BetsController(AppDbContext db, LinkPreview linkPreview) : Controll
         return Json(new { meta?.Url, meta?.Site, meta?.Title, meta?.Description, meta?.Image, error });
     }
 
+    [Authorize]
     [HttpGet]
     public async Task<IActionResult> Create(int? newsId)
     {
@@ -111,10 +126,15 @@ public class BetsController(AppDbContext db, LinkPreview linkPreview) : Controll
         });
     }
 
+    [Authorize]
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(int? newsId, string? link, [Bind(nameof(Bet.Title), nameof(Bet.Description), nameof(Bet.Category), nameof(Bet.ResolvesOn), nameof(Bet.CreatedBy))] Bet bet)
+    public async Task<IActionResult> Create(int? newsId, string? link, [Bind(nameof(Bet.Title), nameof(Bet.Description), nameof(Bet.Category), nameof(Bet.ResolvesOn))] Bet bet)
     {
+        var player = await players.CurrentAsync();
+        if (player is null) return Challenge();
+        ModelState.Remove(nameof(Bet.CreatedBy));
+
         // Nyheden slås op i databasen i stedet for at stole på et link fra formularen.
         var news = newsId is null ? null : await db.NewsItems.AsNoTracking().FirstOrDefaultAsync(n => n.Id == newsId);
 
@@ -138,6 +158,8 @@ public class BetsController(AppDbContext db, LinkPreview linkPreview) : Controll
 
         bet.CreatedAt = DateTime.UtcNow;
         bet.Outcome = BetOutcome.Open;
+        bet.CreatedBy = player.DisplayName;
+        bet.CreatedByUserId = player.UserId;
         if (news is not null)
         {
             bet.NewsUrl = news.Url;
@@ -157,36 +179,17 @@ public class BetsController(AppDbContext db, LinkPreview linkPreview) : Controll
         return RedirectToAction(nameof(Details), new { id = bet.Id });
     }
 
-    private BetDetailsViewModel DetailsModel(Bet bet, Stake newStake) =>
-        new() { Card = BetCard.From(bet), NewStake = newStake, OwnWinningStake = OwnWinningStake(bet) };
+    private async Task<BetDetailsViewModel> DetailsModel(Bet bet, Stake newStake) =>
+        new() { Card = BetCard.From(bet), NewStake = newStake, OwnWinningStake = await OwnWinningStake(bet) };
 
-    /// <summary>Den besøgendes vindende indsats på et afgjort bet, hvis der er en.</summary>
-    private Stake? OwnWinningStake(Bet bet)
+    /// <summary>Den indloggede spillers vindende indsats på et afgjort bet, hvis der er en.</summary>
+    private async Task<Stake?> OwnWinningStake(Bet bet)
     {
         if (bet.Outcome is not (BetOutcome.Yes or BetOutcome.No)) return null;
-        var key = PlayerKey(createIfMissing: false);
-        if (key is null) return null;
+        var player = await players.CurrentAsync();
+        if (player is null) return null;
         var yesWon = bet.Outcome == BetOutcome.Yes;
-        return bet.Stakes.Where(s => s.OwnerKey == key && s.OnYes == yesWon).OrderByDescending(s => s.Amount).FirstOrDefault();
-    }
-
-    private string? PlayerKey(bool createIfMissing)
-    {
-        var id = Request.Cookies[PlayerCookie];
-        if (string.IsNullOrEmpty(id) || id.Length > 100)
-        {
-            if (!createIfMissing) return null;
-            id = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
-            Response.Cookies.Append(PlayerCookie, id, new CookieOptions
-            {
-                HttpOnly = true,
-                IsEssential = true,
-                SameSite = SameSiteMode.Lax,
-                Secure = Request.IsHttps,
-                Expires = DateTimeOffset.UtcNow.AddYears(5),
-            });
-        }
-        return Convert.ToHexStringLower(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(id)));
+        return bet.Stakes.Where(s => s.UserId == player.UserId && s.OnYes == yesWon).OrderByDescending(s => s.Amount).FirstOrDefault();
     }
 
     private Task<Bet?> LoadBet(int id) => db.Bets.AsNoTracking()

@@ -1,10 +1,14 @@
 using LongBets.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace LongBets.Data;
 
-public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+// Login-tabellerne er ASP.NET Identitys standardtabeller (AspNetUsers osv.), ligesom i de andre villadsclaes.dk-projekter.
+public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbContext<IdentityUser>(options)
 {
+    public DbSet<Player> Players => Set<Player>();
     public DbSet<Bet> Bets => Set<Bet>();
     public DbSet<Stake> Stakes => Set<Stake>();
     public DbSet<ContactMessage> ContactMessages => Set<ContactMessage>();
@@ -13,6 +17,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Stake>().HasIndex(x => x.UserId);
         modelBuilder.Entity<Bet>(b =>
         {
             b.Property(x => x.Category).HasConversion<string>().HasMaxLength(20);

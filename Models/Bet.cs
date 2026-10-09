@@ -46,6 +46,10 @@ public class Bet
     [Display(Name = "Dit kaldenavn")]
     public string CreatedBy { get; set; } = "";
 
+    /// <summary>Spilleren, der oprettede bettet. Null for bets fra før login.</summary>
+    [StringLength(450)]
+    public string? CreatedByUserId { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public BetOutcome Outcome { get; set; } = BetOutcome.Open;

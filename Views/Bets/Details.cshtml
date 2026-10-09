@@ -1,5 +1,7 @@
 @model BetDetailsViewModel
+@inject LongBets.Accounts.PlayerService Players
 @{
+    var me = await Players.CurrentAsync();
     var card = Model.Card;
     var bet = card.Bet;
     ViewData["Title"] = bet.Title;
@@ -111,7 +113,7 @@
                                     <q class="win-note">@w.WinNote</q>
                                 }
                             </span>
-                            <span class="leaderboard__value">@((w.Amount * winOdds).ToString("N0")) PK</span>
+                            <span class="leaderboard__value">@((w.Payout ?? LongBets.Data.Settlement.Payout(w.Amount, winOdds)).ToString("N0")) PK</span>
                         </li>
                     }
                 </ol>
@@ -132,6 +134,12 @@
                 </form>
             }
         }
+        else if (me is null)
+        {
+            <p>Log ind for at satse. Nye spillere får @Player.StartBalance.ToString("N0") Pralkroner at prale med og @Player.DailyBonus mere hver dag.</p>
+            <p class="muted small">Odds lige nu: PÅ @card.YesOdds.Odds() · IMOD @card.NoOdds.Odds()</p>
+            <a class="btn btn--accent btn--lg btn--block" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Url.Action("Details", new { id = bet.Id })">Log ind og sats</a>
+        }
         else
         {
             <form class="form" asp-action="PlaceStake" asp-route-id="@bet.Id" method="post" data-betslip data-yes-odds="@card.YesOdds.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-no-odds="@card.NoOdds.ToString(System.Globalization.CultureInfo.InvariantCulture)">
@@ -148,20 +156,16 @@
                     </label>
                 </div>
 
-                <div class="field">
-                    <label asp-for="NewStake.PlayerName"></label>
-                    <input asp-for="NewStake.PlayerName" placeholder="Fx Fremsynet Frede" autocomplete="nickname" />
-                    <span asp-validation-for="NewStake.PlayerName" class="field__error"></span>
-                </div>
+                <p class="muted small">Du satser som <strong>@me!.DisplayName</strong> og har <strong>@me.Balance.ToString("N0") PK</strong> på kontoen.</p>
 
                 <div class="field">
                     <label asp-for="NewStake.Amount"></label>
-                    <input asp-for="NewStake.Amount" type="number" min="1" max="10000" step="1" />
+                    <input asp-for="NewStake.Amount" type="number" min="1" max="@Math.Min(10_000, me.Balance)" step="1" />
                     <div class="quick-amounts">
                         <button type="button" data-amount="10">10</button>
                         <button type="button" data-amount="100">100</button>
                         <button type="button" data-amount="1000">1.000</button>
-                        <button type="button" data-amount="10000">All in</button>
+                        <button type="button" data-amount="@Math.Min(10_000, me.Balance)">All in</button>
                     </div>
                     <span asp-validation-for="NewStake.Amount" class="field__error"></span>
                 </div>

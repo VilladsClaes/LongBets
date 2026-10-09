@@ -71,7 +71,7 @@ p { margin: 0 0 1em; }
     color: var(--accent-ink);
     font-weight: 600;
 }
-.topbar__right { white-space: nowrap; }
+.topbar__right { white-space: nowrap; color: inherit; text-decoration: none; }
 @media (max-width: 640px) { .topbar__right { display: none; } }
 
 .site-header {

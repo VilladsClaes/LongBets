@@ -7,7 +7,10 @@ name: Udgiv til simply.com
 #   FTP_USERNAME    FTP-brugernavn
 #   FTP_PASSWORD    FTP-adgangskode
 #   FTP_REMOTE_DIR  Mappen for subdomænet på webhotellet, fx /longbets.villadsclaes.dk/
-#   ADMIN_PASSWORD  (valgfri) Admin-adgangskoden. Sættes den, skrives appsettings.Production.json ved hver udgivelse.
+#   ADMIN_PASSWORD        (valgfri) Admin-adgangskoden.
+#   GOOGLE_CLIENT_ID      (valgfri) OAuth-klient fra Google Cloud Console. Uden den er spillerlogin slået fra.
+#   GOOGLE_CLIENT_SECRET  (valgfri) Hører til GOOGLE_CLIENT_ID.
+# Er en af de valgfri sat, skrives appsettings.Production.json ved hver udgivelse.
 
 on:
   push:
@@ -44,12 +47,14 @@ jobs:
       - name: Byg og publicer
         run: dotnet publish LongBets.csproj -c Release -r win-x86 --self-contained true -o out
 
-      - name: Skriv admin-adgangskode
+      - name: Skriv hemmelig konfiguration
         env:
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         run: |
-          if [ -n "$ADMIN_PASSWORD" ]; then
-            jq -n --arg pw "$ADMIN_PASSWORD" '{Admin: {Password: $pw}}' > out/appsettings.Production.json
+          if [ -n "$ADMIN_PASSWORD$GOOGLE_CLIENT_ID" ]; then
+            jq -n --arg pw "$ADMIN_PASSWORD" --arg gid "$GOOGLE_CLIENT_ID" --arg gsecret "$GOOGLE_CLIENT_SECRET" '{Admin: {Password: $pw}, Authentication: {Google: {ClientId: $gid, ClientSecret: $gsecret}}}' > out/appsettings.Production.json
           fi
 
       - name: Installer lftp

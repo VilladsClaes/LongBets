@@ -1,0 +1,106 @@
+@model MyBetsViewModel
+@{
+    ViewData["Title"] = "Mine væddemål";
+    var player = Model.Player;
+}
+
+<section class="page-head">
+    <div class="container">
+        <p class="eyebrow">Din spillerkonto</p>
+        <h1>Mine væddemål</h1>
+        <p class="lead">Hej @player.DisplayName. Her kan du følge dine indsatser, mens fremtiden langsomt indfinder sig.</p>
+    </div>
+    <div class="container stats">
+        <div class="stat"><span class="stat__value">@player.Balance.ToString("N0")</span><span class="stat__label">Pralkroner på kontoen</span></div>
+        <div class="stat"><span class="stat__value">@Model.AtStake.ToString("N0")</span><span class="stat__label">i spil lige nu</span></div>
+        <div class="stat"><span class="stat__value @(Model.NetResult < 0 ? "no" : "yes")">@(Model.NetResult > 0 ? "+" : "")@Model.NetResult.ToString("N0")</span><span class="stat__label">vundet i alt (netto)</span></div>
+        <div class="stat"><span class="stat__value">@Model.Stakes.Count</span><span class="stat__label">indsatser</span></div>
+    </div>
+</section>
+
+<section class="container section layout-sidebar">
+    <div>
+        <h2 class="section-title">Åbne indsatser <span class="muted">(@Model.Open.Count())</span></h2>
+        @if (!Model.Open.Any())
+        {
+            <p class="muted">Ingen åbne indsatser. <a asp-controller="Bets" asp-action="Index">Find et bet</a> eller <a asp-controller="News" asp-action="Index">bet på en nyhed</a>.</p>
+        }
+        else
+        {
+            <ul class="stake-list">
+                @foreach (var m in Model.Open)
+                {
+                    <li class="stake">
+                        <span class="stake__side @(m.Stake.OnYes ? "yes" : "no")">@(m.Stake.OnYes ? "PÅ" : "IMOD")</span>
+                        <div class="stake__body">
+                            <div><a asp-controller="Bets" asp-action="Details" asp-route-id="@m.Stake.BetId"><strong>@m.Card.Bet.Title</strong></a></div>
+                            <div class="muted small">
+                                @m.Stake.Amount.ToString("N0") PK · mulig gevinst ca. @m.PotentialPayout.ToString("N0") PK med nuværende odds
+                                · afgøres senest @m.Card.Bet.ResolvesOn.ToString("d. MMM yyyy") (@m.Card.Bet.ResolvesOn.Countdown())
+                            </div>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+
+        <h2 class="section-title">Afgjorte <span class="muted">(@Model.Resolved.Count())</span></h2>
+        @if (!Model.Resolved.Any())
+        {
+            <p class="muted">Intet afgjort endnu. Det er LongBets, giv det et årti.</p>
+        }
+        else
+        {
+            <ul class="stake-list">
+                @foreach (var m in Model.Resolved)
+                {
+                    var bet = m.Card.Bet;
+                    <li class="stake">
+                        <span class="stake__side @(m.Stake.OnYes ? "yes" : "no")">@(m.Stake.OnYes ? "PÅ" : "IMOD")</span>
+                        <div class="stake__body">
+                            <div><a asp-controller="Bets" asp-action="Details" asp-route-id="@m.Stake.BetId"><strong>@bet.Title</strong></a></div>
+                            <div class="muted small">
+                                <span class="@bet.Outcome.CssClass()">@bet.Outcome.Label()</span>
+                                · indsats @m.Stake.Amount.ToString("N0") PK
+                                @if (bet.Outcome == BetOutcome.Void)
+                                {
+                                    <text>· retur</text>
+                                }
+                                else if (m.Net is int net)
+                                {
+                                    <text>· </text><strong class="@(net > 0 ? "yes" : "no")">@(net > 0 ? $"+{net:N0}" : net.ToString("N0")) PK</strong>
+                                }
+                            </div>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+
+        @if (Model.Created.Count > 0)
+        {
+            <h2 class="section-title">Bets du har oprettet</h2>
+            <div class="card-grid">
+                @foreach (var card in Model.Created)
+                {
+                    <partial name="_BetCard" model="card" />
+                }
+            </div>
+        }
+    </div>
+
+    <aside class="panel">
+        <h3 class="panel__title">🪪 Profil</h3>
+        <form class="form" asp-action="Rename" method="post">
+            <div class="field">
+                <label for="displayName">Kaldenavn</label>
+                <input id="displayName" name="displayName" value="@player.DisplayName" minlength="2" maxlength="60" required />
+            </div>
+            <button type="submit" class="btn btn--ghost btn--block">Gem kaldenavn</button>
+        </form>
+        <p class="muted small">Du får @Player.DailyBonus Pralkroner i bonus hver dag, du kigger forbi. Kaldenavnet står på nye indsatser og på ranglisten.</p>
+        <form asp-action="Logout" method="post">
+            <button type="submit" class="btn btn--ghost btn--block">Log ud</button>
+        </form>
+    </aside>
+</section>

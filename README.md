@@ -11,9 +11,31 @@ Bygget med ASP.NET Core MVC (.NET 10) og Entity Framework Core med SQLite.
 - Oversigt over bets med filtrering på kategori og sortering
 - Detaljeside med odds (totalisator), kupon og liste over indsatser
 - Opret dit eget bet, evt. ud fra et link til en artikel (titel og billede hentes automatisk, kun fra offentlige adresser)
-- Vinderne kan skrive "Jeg fik ret fordi …" på et afgjort bet. Genkendes via en anonym cookie, så det kræver ingen konto
+- Spillerkonti med Google-login: 1.000 Pralkroner i startkapital, 100 i daglig bonus, indsatsen trækkes fra saldoen og gevinsten udbetales, når bettet afgøres
+- "Mine væddemål" (`/Account/Mine`): saldo, åbne og afgjorte indsatser, gevinst og egne bets
+- Vinderne kan skrive "Jeg fik ret fordi …" på et afgjort bet
 - Kontaktformular, hvor beskeder gemmes i databasen
 - Admin-side (`/Admin`): afgør (PÅ, IMOD eller annullér, med begrundelse) eller genåbn bets, slet bets, læs og slet kontaktbeskeder, se status for hvert nyhedsfeed og hent nyheder med det samme
+
+## Spillerlogin
+
+Spillerne logger ind med Google via ASP.NET Identity. Login-tabellerne er Identitys standardtabeller (`AspNetUsers`, `AspNetUserLogins` osv.), og spillets data ligger i `Players` (saldo, kaldenavn) og `Stakes.UserId`. `Players.UserId` er bevidst ikke en fremmednøgle til `AspNetUsers`, så login senere kan flyttes til en fælles brugerdatabase for alle villadsclaes.dk-projekter. E-mail/adgangskode-login kan tilføjes på de samme tabeller.
+
+Google-login er slået til, når `Authentication:Google:ClientId` og `Authentication:Google:ClientSecret` er sat. Opret en OAuth-klient (type "Web application") i Google Cloud Console med disse redirect-adresser:
+
+- `https://longbets.villadsclaes.dk/signin-google`
+- `https://localhost:7180/signin-google` (lokalt; brug `dotnet run --launch-profile https`)
+
+Lokalt:
+
+```bash
+dotnet user-secrets set "Authentication:Google:ClientId" "..."
+dotnet user-secrets set "Authentication:Google:ClientSecret" "..."
+```
+
+På serveren skrives de af GitHub Actions fra secrets `GOOGLE_CLIENT_ID` og `GOOGLE_CLIENT_SECRET`. Under udvikling (`ASPNETCORE_ENVIRONMENT=Development`) har login-siden også et testlogin uden Google.
+
+Login-nøglerne (Data Protection) gemmes i `App_Data/keys`, så spillerne ikke logges ud, når IIS genstarter appen.
 
 ## Admin-adgangskode
 

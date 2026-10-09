@@ -27,9 +27,12 @@ public class Stake
 
     public DateTime PlacedAt { get; set; } = DateTime.UtcNow;
 
-    /// <summary>SHA-256 af browserens spiller-cookie, så vinderen senere kan skrive sin forklaring.</summary>
-    [StringLength(64)]
-    public string? OwnerKey { get; set; }
+    /// <summary>Spilleren bag indsatsen. Null for gamle indsatser fra før login, som kun har et kaldenavn.</summary>
+    [StringLength(450)]
+    public string? UserId { get; set; }
+
+    /// <summary>Udbetalingen, når bettet er afgjort: gevinst, indsatsen retur ved annullering, eller 0.</summary>
+    public int? Payout { get; set; }
 
     /// <summary>Vinderens »Jeg fik ret fordi …«.</summary>
     [StringLength(600)]

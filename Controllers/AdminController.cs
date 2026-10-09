@@ -5,7 +5,6 @@ using LongBets.Data;
 using LongBets.Models;
 using LongBets.News;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -13,9 +12,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LongBets.Controllers;
 
-[Authorize]
+[Authorize(AuthenticationSchemes = Scheme)]
 public class AdminController(AppDbContext db, IConfiguration config, NewsRefreshService refresher) : Controller
 {
+    /// <summary>Admin har sin egen cookie med én fælles adgangskode, adskilt fra spillernes Google-login.</summary>
+    public const string Scheme = "Admin";
     public async Task<IActionResult> Index()
     {
         var bets = await db.Bets.AsNoTracking().Include(b => b.Stakes).ToListAsync();
@@ -35,13 +36,15 @@ public class AdminController(AppDbContext db, IConfiguration config, NewsRefresh
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Resolve(int id, BetOutcome outcome, string? note)
     {
-        var bet = await db.Bets.FindAsync(id);
+        var bet = await db.Bets.Include(b => b.Stakes).FirstOrDefaultAsync(b => b.Id == id);
         if (bet is null) return NotFound();
 
-        bet.Outcome = outcome;
-        bet.ResolvedAt = outcome == BetOutcome.Open ? null : DateTime.UtcNow;
-        bet.ResolutionNote = outcome != BetOutcome.Open && note?.Trim() is { Length: > 0 } text ? text[..Math.Min(text.Length, 1000)] : null;
-        await db.SaveChangesAsync();
+        await using (var tx = await db.Database.BeginTransactionAsync())
+        {
+            await Settlement.ApplyAsync(db, bet, outcome, note);
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
 
         TempData["Toast"] = outcome switch
         {
@@ -66,11 +69,17 @@ public class AdminController(AppDbContext db, IConfiguration config, NewsRefresh
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteBet(int id)
     {
-        var bet = await db.Bets.FindAsync(id);
+        var bet = await db.Bets.Include(b => b.Stakes).FirstOrDefaultAsync(b => b.Id == id);
         if (bet is null) return NotFound();
 
-        db.Bets.Remove(bet);
-        await db.SaveChangesAsync();
+        await using (var tx = await db.Database.BeginTransactionAsync())
+        {
+            // Et åbent bet slettes som en annullering: spillerne får deres indsats retur.
+            if (bet.Outcome == BetOutcome.Open) await Settlement.ApplyAsync(db, bet, BetOutcome.Void, null);
+            db.Bets.Remove(bet);
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
 
         TempData["Toast"] = $"»{bet.Title}« er slettet sammen med alle indsatser.";
         return RedirectToAction(nameof(Index));
@@ -127,8 +136,8 @@ public class AdminController(AppDbContext db, IConfiguration config, NewsRefresh
             return View();
         }
 
-        var identity = new ClaimsIdentity([new Claim(ClaimTypes.Name, "admin")], CookieAuthenticationDefaults.AuthenticationScheme);
-        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+        var identity = new ClaimsIdentity([new Claim(ClaimTypes.Name, "admin")], Scheme);
+        await HttpContext.SignInAsync(Scheme, new ClaimsPrincipal(identity));
 
         return Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl) : RedirectToAction(nameof(Index));
     }
@@ -137,7 +146,7 @@ public class AdminController(AppDbContext db, IConfiguration config, NewsRefresh
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()
     {
-        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        await HttpContext.SignOutAsync(Scheme);
         return RedirectToAction("Index", "Home");
     }
 
