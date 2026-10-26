@@ -1,0 +1,107 @@
+@inject LongBets.Accounts.PlayerService Players
+@{
+    var me = await Players.CurrentAsync();
+}
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@(ViewData["Title"] is string t ? $"{t} · LongBets" : "LongBets · Danmarks mest tålmodige bookmaker")</title>
+    <meta name="description" content="Odds på fremtiden. Mindst ét år ude. Ingen rigtige penge, kun Pralkroner og dit gode navn og rygte." />
+    <link rel="icon" href="~/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="topbar">
+        <span>🐌 Udbetaling sker, når fremtiden indtræffer. Plus 3–5 hverdage.</span>
+        @if (me is not null)
+        {
+            <a class="topbar__right" asp-controller="Account" asp-action="Mine">@me.DisplayName · Saldo: <strong>@me.Balance.ToString("N0") Pralkroner</strong></a>
+        }
+        else
+        {
+            <a class="topbar__right" asp-controller="Account" asp-action="Login">Log ind og få @Player.StartBalance.ToString("N0") Pralkroner</a>
+        }
+    </div>
+
+    <header class="site-header">
+        <div class="container site-header__inner">
+            <a class="logo" asp-controller="Home" asp-action="Index" aria-label="LongBets forside">
+                <svg class="logo__mark" viewBox="0 0 48 48" aria-hidden="true">
+                    <circle cx="28" cy="22" r="13" fill="none" stroke="currentColor" stroke-width="4" />
+                    <path d="M28 22m-6 0a6 6 0 1 0 6-6" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" />
+                    <path d="M4 38h34c4 0 6-2 6-5" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+                    <path d="M10 38c-2-6 0-12 5-14" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+                    <path d="M12 24 9 14M16 23l1-10" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+                </svg>
+                <span class="logo__text">Long<span>Bets</span></span>
+            </a>
+
+            <input type="checkbox" id="nav-toggle" class="nav-toggle" />
+            <label for="nav-toggle" class="nav-toggle__label" aria-label="Menu"><span></span></label>
+
+            <nav class="site-nav">
+                <a asp-controller="Home" asp-action="Index">Forside</a>
+                <a asp-controller="News" asp-action="Index">Nyheder</a>
+                <a asp-controller="Bets" asp-action="Index">Alle bets</a>
+                <a asp-controller="Home" asp-action="Responsible">Ansvarligt spil</a>
+                <a asp-controller="Home" asp-action="Contact">Kontakt</a>
+                @if (me is not null)
+                {
+                    <a asp-controller="Account" asp-action="Mine">Mine væddemål</a>
+                }
+                else
+                {
+                    <a asp-controller="Account" asp-action="Login">Log ind</a>
+                }
+                <a class="btn btn--accent" asp-controller="Bets" asp-action="Create">+ Opret bet</a>
+            </nav>
+        </div>
+    </header>
+
+    @if (TempData["Toast"] is string toast)
+    {
+        <div class="toast" role="status">@toast</div>
+    }
+    else if (Players.BonusGranted)
+    {
+        <div class="toast" role="status">Dagens bonus: +@Player.DailyBonus Pralkroner. Tålmodighed betaler sig. Lidt.</div>
+    }
+
+    <main>
+        @RenderBody()
+    </main>
+
+    <footer class="site-footer">
+        <div class="container site-footer__grid">
+            <div>
+                <div class="logo logo--small"><span class="logo__text">Long<span>Bets</span></span></div>
+                <p class="muted">Danmarks mest tålmodige bookmaker siden i går. Vi tager imod bets på alt, der tidligst afgøres om et år.</p>
+            </div>
+            <div>
+                <h4>Licens &amp; tilsyn</h4>
+                <p class="muted">Licenseret af ingen. Under tilsyn af en snegl ved navn Svend, der primært holder øje med salaten.</p>
+            </div>
+            <div>
+                <h4>Ansvarligt spil</h4>
+                <p class="muted">Pralkroner er ikke penge og kan ikke veksles til noget som helst. Det eneste, du kan tabe, er din værdighed. <a asp-controller="Home" asp-action="Responsible">Læs mere</a>.</p>
+            </div>
+        </div>
+        <div class="container site-footer__bottom">
+            <span>© @DateTime.Now.Year LongBets · <a class="footer-admin" asp-controller="Admin" asp-action="Index">Admin</a></span>
+            <span class="badges">
+                <span class="badge-pill">18+ (i hjertet)</span>
+                <span class="badge-pill">0 % husfordel</span>
+                <span class="badge-pill">Odds af lommeregner fra 1987</span>
+            </span>
+        </div>
+    </footer>
+
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

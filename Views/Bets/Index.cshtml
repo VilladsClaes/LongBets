@@ -1,0 +1,52 @@
+@model BetListViewModel
+@{
+    ViewData["Title"] = "Alle bets";
+    var sorts = new[] { ("hot", "🔥 Mest spillet"), ("new", "🆕 Nyeste"), ("soon", "⏳ Snart afgjort"), ("longshot", "🎯 Langskud") };
+}
+
+<section class="page-head">
+    <div class="container">
+        <p class="eyebrow">Odds-tavlen</p>
+        <h1>Alle bets</h1>
+        <p class="lead">Fremtiden, sorteret i kategorier. Vælg PÅ eller IMOD, og vent tålmodigt i en årrække.</p>
+    </div>
+</section>
+
+<section class="container section">
+    @if (Model.NewsUrl is not null)
+    {
+        <p class="news-ref">Viser kun bets på én nyhed. <a asp-action="Index">Vis alle bets</a></p>
+    }
+    <div class="filters">
+        <nav class="filters__group" aria-label="Kategori">
+            <a class="pill @(Model.Category is null ? "is-active" : "")" asp-action="Index" asp-route-sort="@Model.Sort">Alle</a>
+            @foreach (var c in Enum.GetValues<BetCategory>())
+            {
+                <a class="pill @(Model.Category == c ? "is-active" : "")" asp-action="Index" asp-route-category="@c" asp-route-sort="@Model.Sort">@c.Icon() @c</a>
+            }
+        </nav>
+        <nav class="filters__group" aria-label="Sortering">
+            @foreach (var (key, label) in sorts)
+            {
+                <a class="pill pill--sort @(Model.Sort == key ? "is-active" : "")" asp-action="Index" asp-route-category="@Model.Category" asp-route-sort="@key">@label</a>
+            }
+        </nav>
+    </div>
+
+    @if (Model.Bets.Count == 0)
+    {
+        <div class="empty">
+            <p>Ingen bets i denne kategori. Fremtiden er tilsyneladende helt forudsigelig her.</p>
+            <a class="btn btn--accent" asp-action="Create">Vær den første</a>
+        </div>
+    }
+    else
+    {
+        <div class="card-grid card-grid--3">
+            @foreach (var card in Model.Bets)
+            {
+                <partial name="_BetCard" model="card" />
+            }
+        </div>
+    }
+</section>

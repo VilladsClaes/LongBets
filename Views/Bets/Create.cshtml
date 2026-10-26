@@ -1,0 +1,96 @@
+@model Bet
+@{
+    ViewData["Title"] = "Opret bet";
+    var news = ViewBag.News as NewsItem;
+    var inAYear = DateTime.Today.Year + 1;
+    string[] templates = news is null ? [] :
+    [
+        $"Om et år kan ingen huske det her: »{news.Title}«",
+        $"Det her ender i en kommissionsundersøgelse: »{news.Title}«",
+        $"Der kommer en dokumentarserie om: »{news.Title}«",
+        $"Inden {inAYear + 1} er der sket præcis det samme igen: »{news.Title}«",
+    ];
+}
+
+<section class="page-head">
+    <div class="container">
+        <a class="link-back" asp-action="Index">← Alle bets</a>
+        <p class="eyebrow">Nyt marked</p>
+        <h1>@(news is null ? "Opret et bet" : "Bet på nyheden")</h1>
+        <p class="lead">Kom med en påstand om fremtiden. Den skal kunne afgøres med et klart ja eller nej, og tidligst om et år.</p>
+    </div>
+</section>
+
+<section class="container section layout-sidebar">
+    <form class="panel form" asp-action="Create" asp-route-newsId="@news?.Id" method="post">
+        <div asp-validation-summary="ModelOnly" class="form__errors"></div>
+
+        @if (news is not null)
+        {
+            <div class="news-ref">
+                <partial name="_NewsSourceTag" model="news.Source" />
+                <a href="@news.Url" target="_blank" rel="noopener nofollow">@news.Title ↗</a>
+            </div>
+            <div class="field">
+                <span class="field__label">Hurtigstart (klik og ret til)</span>
+                <div class="templates">
+                    @foreach (var t in templates)
+                    {
+                        <button type="button" class="template" data-template="@(t.Length > 140 ? t[..139] + "…" : t)">@t.Split(':')[0]</button>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (news is null)
+        {
+            <div class="field" data-link-preview>
+                <label for="link">Link til en artikel (valgfri)</label>
+                <div class="field__row">
+                    <input id="link" name="link" type="url" value="@ViewBag.Link" maxlength="1000" placeholder="https://…" inputmode="url" />
+                    <button type="button" class="btn btn--sm btn--ghost" data-link-fetch>Hent</button>
+                </div>
+                <span class="field__error">@Html.ValidationMessage("link")</span>
+                <div class="link-preview" data-link-result hidden></div>
+            </div>
+        }
+
+        <div class="field">
+            <label asp-for="Title"></label>
+            <input asp-for="Title" placeholder="Fx »Rundkørsler bliver forstået af alle bilister inden 2040«" />
+            <span asp-validation-for="Title" class="field__error"></span>
+        </div>
+
+        <div class="field">
+            <label asp-for="Description"></label>
+            <textarea asp-for="Description" rows="4" placeholder="Hvordan afgøres det? Hvad tæller, og hvad tæller ikke?"></textarea>
+            <span asp-validation-for="Description" class="field__error"></span>
+        </div>
+
+        <div class="form__row form__row--2">
+            <div class="field">
+                <label asp-for="Category"></label>
+                <select asp-for="Category" asp-items="Html.GetEnumSelectList<BetCategory>()"></select>
+            </div>
+            <div class="field">
+                <label asp-for="ResolvesOn"></label>
+                <input asp-for="ResolvesOn" type="date" />
+                <span asp-validation-for="ResolvesOn" class="field__error"></span>
+            </div>
+        </div>
+
+
+        <button type="submit" class="btn btn--accent btn--lg">Sæt bettet i gang</button>
+    </form>
+
+    <aside class="panel">
+        <h3 class="panel__title">📜 Regler for gode bets</h3>
+        <ul class="rules">
+            <li><strong>Gerne med kilde.</strong> Indsæt et link til artiklen, så kan alle se, hvad bettet handler om.</li>
+            <li><strong>Mindst et år ude.</strong> Vi hedder ikke ShortBets.</li>
+            <li><strong>Klart ja eller nej.</strong> »Det bliver lidt bedre« er ikke et bet. Det er en politisk tale.</li>
+            <li><strong>Ingen privatpersoner.</strong> Politikere og direktører i nyhederne må gerne. Naboens skilsmisse må ikke. Det er ikke satire, det er bare ondt.</li>
+            <li><strong>Hold det sjovt.</strong> Sneglen Svend modererer. Langsomt, men grundigt.</li>
+        </ul>
+    </aside>
+</section>

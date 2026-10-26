@@ -1,0 +1,26 @@
+@{
+    var code = (int)(ViewBag.StatusCode ?? 500);
+    ViewData["Title"] = code == 404 ? "Ikke fundet" : "Fejl";
+}
+
+<section class="page-head page-head--center">
+    <div class="container">
+        <p class="eyebrow">Fejl @code</p>
+        @if (code == 404)
+        {
+            <h1>Siden findes ikke (endnu)</h1>
+            <p class="lead">Vi giver odds 1,01 på, at du har tastet forkert. Måske dukker siden op om nogle år. Så er du godt nok tidligt ude.</p>
+        }
+        else if (code == 429)
+        {
+            <h1>Rolig nu</h1>
+            <p class="lead">For mange forsøg på kort tid. Sneglen har brug for en pause. Prøv igen om et minut.</p>
+        }
+        else
+        {
+            <h1>Noget gik galt</h1>
+            <p class="lead">Serveren tabte et bet med sig selv. Prøv igen om lidt.</p>
+        }
+        <a class="btn btn--accent btn--lg" asp-controller="Home" asp-action="Index">Til forsiden</a>
+    </div>
+</section>

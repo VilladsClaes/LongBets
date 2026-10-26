@@ -1,0 +1,46 @@
+@model BetCard
+@{
+    var bet = Model.Bet;
+    var badge = Model.Badge();
+}
+<article class="bet-card">
+    <div class="bet-card__meta">
+        <span class="chip">@bet.Category.Icon() @bet.Category</span>
+        @if (bet.Outcome != BetOutcome.Open)
+        {
+            <span class="chip chip--done">@bet.Outcome.Label()</span>
+        }
+        else if (badge is not null)
+        {
+            <span class="chip chip--hot">@badge</span>
+        }
+        @if (bet.NewsSource is not null)
+        {
+            <span class="chip">📰 @LongBets.News.NewsSources.NameOf(bet.NewsSource)</span>
+        }
+    </div>
+
+    <h3 class="bet-card__title">
+        <a asp-controller="Bets" asp-action="Details" asp-route-id="@bet.Id">@bet.Title</a>
+    </h3>
+
+    <div class="odds-row">
+        <a class="odds odds--yes" asp-controller="Bets" asp-action="Details" asp-route-id="@bet.Id" asp-fragment="stake">
+            <span class="odds__label">PÅ</span>
+            <span class="odds__value">@Model.YesOdds.Odds()</span>
+        </a>
+        <a class="odds odds--no" asp-controller="Bets" asp-action="Details" asp-route-id="@bet.Id" asp-fragment="stake">
+            <span class="odds__label">IMOD</span>
+            <span class="odds__value">@Model.NoOdds.Odds()</span>
+        </a>
+    </div>
+
+    <div class="meter" title="@Model.YesPercent % af puljen tror på det">
+        <span style="width:@Model.YesPercent%"></span>
+    </div>
+
+    <div class="bet-card__foot">
+        <span>⏳ @bet.ResolvesOn.Countdown()</span>
+        <span>💰 @Model.TotalPool.ToString("N0") PK</span>
+    </div>
+</article>

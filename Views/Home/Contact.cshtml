@@ -1,0 +1,51 @@
+@model ContactMessage
+@{
+    ViewData["Title"] = "Kontakt";
+}
+
+<section class="page-head">
+    <div class="container">
+        <p class="eyebrow">Kundeservice</p>
+        <h1>Kontakt os</h1>
+        <p class="lead">Vores kundeservice er bemandet af Sneglen Svend. Forventet svartid: lang. Det er trods alt det, vi hedder.</p>
+    </div>
+</section>
+
+<section class="container section layout-sidebar">
+    <form class="panel form" asp-action="Contact" method="post">
+        <div asp-validation-summary="ModelOnly" class="form__errors"></div>
+
+        <div class="form__row form__row--2">
+            <div class="field">
+                <label asp-for="Name"></label>
+                <input asp-for="Name" placeholder="Fx Pralende Poul" />
+                <span asp-validation-for="Name" class="field__error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="Email"></label>
+                <input asp-for="Email" placeholder="dig@eksempel.dk" />
+                <span asp-validation-for="Email" class="field__error"></span>
+            </div>
+        </div>
+
+        <div class="field">
+            <label asp-for="Message"></label>
+            <textarea asp-for="Message" rows="6" placeholder="Klager over odds, ros til sneglen, forslag til nye bets…"></textarea>
+            <span asp-validation-for="Message" class="field__error"></span>
+        </div>
+
+        <button type="submit" class="btn btn--accent btn--lg">Send besked</button>
+    </form>
+
+    <aside class="panel">
+        <h3 class="panel__title">Ofte stillede spørgsmål</h3>
+        <dl class="faq">
+            <dt>Hvornår får jeg min gevinst?</dt>
+            <dd>Når fremtiden er indtruffet, og vi har fundet ud af, hvem der havde ret. Og du har ikke vundet noget, der har værdi.</dd>
+            <dt>Kan jeg hæve mine Pralkroner?</dt>
+            <dd>Du kan hæve dem til skyerne i en samtale. Andet kan du ikke.</dd>
+            <dt>Er det her et rigtigt spillested?</dt>
+            <dd>Nej. Der er ingen rigtige penge involveret. Overhovedet. Det her er satire med en database.</dd>
+        </dl>
+    </aside>
+</section>
